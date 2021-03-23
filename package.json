@@ -44,7 +44,7 @@
     "@ariastel/nodebb-plugin-share-vk": "^1.0.1",
     "@ariastel/nodebb-plugin-sso-vk": "^2.0.7",
     "@ariastel/nodebb-plugin-super-categories": "^1.0.6",
-    "@ariastel/nodebb-theme-ariastel": "^1.1.6",
+    "@ariastel/nodebb-theme-ariastel": "^1.1.7",
     "@ariastel/nodebb-widget-partners": "0.0.1",
     "@ariastel/nodebb-widget-recent-posts": "0.0.6",
     "@ariastel/nodebb-widget-recent-topics": "0.0.1",
