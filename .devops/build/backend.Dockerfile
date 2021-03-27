@@ -11,6 +11,10 @@ ENV GITHUB_TOKEN $GITHUB_TOKEN
 ARG NODE_ENV
 ENV NODE_ENV $NODE_ENV
 
+ENV NODEBB_USE_LOCAL_PLUGINS='true' \
+    NODEBB_USE_LOCAL_THEME='true' \
+    NODEBB_THEME_ID='@ariastel/nodebb-theme-ariastel'
+
 ARG NODEBB_URL
 ENV NODEBB_URL $NODEBB_URL
 ARG NODEBB_PORT
@@ -47,6 +51,8 @@ RUN echo "//npm.pkg.github.com/:_authToken=GITHUB_TOKEN" > ~/.npmrc
 ENV NODE_ENV=production \
     daemon=false \
     silent=false
+
+RUN node ./nodebb build --series
 
 EXPOSE $NODEBB_PORT
 
