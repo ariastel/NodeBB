@@ -1,7 +1,7 @@
 #!/bin/bash
 
 docker build \
-  --build-arg GITHUB_TOKEN="1234576" \
+  --build-arg GITHUB_TOKEN="0d56d18b456ff9bca39ba739dacc92158da01642" \
   --build-arg NODE_ENV=production \
   --build-arg NODEBB_SECRET="CTsNDeHNHX9jBnQFgz9WbqkhsQaA24vj" \
   --build-arg NODEBB_URL="https://ritotalks.ru" \
