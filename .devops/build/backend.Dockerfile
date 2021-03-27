@@ -36,7 +36,8 @@ ENV MONGO_DATABASE $MONGO_DATABASE
 RUN mkdir -p /opt/nodebb
 WORKDIR /opt/nodebb
 
-RUN echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > ~/.npmrc
+RUN echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > ~/.npmrc && \
+    echo "@ariastel:registry=https://npm.pkg.github.com/" >> ~/.npmrc
 
 COPY install/package.json /opt/nodebb/package.json
 
