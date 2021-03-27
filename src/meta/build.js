@@ -61,6 +61,10 @@ async function beforeBuild(targets) {
 	require('colors');
 	process.stdout.write('  started'.green + '\n'.reset);
 	try {
+		if (nconf.get('NODEBB_USE_LOCAL_PLUGINS') !== 'true' || nconf.get('NODEBB_USE_LOCAL_THEME') !== 'true') {
+			const db = require('../database');
+			await db.init();
+		}
 		meta = require('./index');
 		await meta.themes.setupPaths();
 		const plugins = require('../plugins');
