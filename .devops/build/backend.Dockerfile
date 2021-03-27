@@ -36,6 +36,8 @@ ENV MONGO_DATABASE $MONGO_DATABASE
 RUN mkdir -p /opt/nodebb
 WORKDIR /opt/nodebb
 
+RUN echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > ~/.npmrc
+
 COPY install/package.json /opt/nodebb/package.json
 
 RUN apt-get update && apt-get install -y gettext-base && \
@@ -46,10 +48,8 @@ COPY . /opt/nodebb
 COPY .devops/build/k8s.config.json.template .
 COPY .devops/build/k8s.start.sh ./start.sh
 
-RUN echo "//npm.pkg.github.com/:_authToken=GITHUB_TOKEN" > ~/.npmrc && \
-    envsubst < /opt/nodebb/k8s.config.json.template > /opt/nodebb/config.json || \
+RUN envsubst < /opt/nodebb/k8s.config.json.template > /opt/nodebb/config.json || \
     (echo "Unable to create nodebb config.json" && exit 1)
-
 
 ENV NODE_ENV=production \
     daemon=false \
