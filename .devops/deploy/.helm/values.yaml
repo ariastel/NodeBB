@@ -1,0 +1,64 @@
+---
+nodeSelector: ''
+
+image:
+  registry: ''
+  name: nodebb-backend
+  pullPolicy: Never
+  tag: latest
+
+# jobs:
+#   psql-migrate-job:
+#     image_tag_prefix: migrations
+#     # hook: post-install,post-upgrade
+#     hook: "pre-install,pre-upgrade"
+#     hook_weight: -1
+#     restartPolicy: Never
+#     command:
+#       - some_cmd
+#     args:
+#       - some
+#       - args
+
+#   psql-seed-job:
+#     image_tag_prefix: seeds
+#     hook: "post-install,post-upgrade"
+#     # hook: "pre-install,pre-upgrade"
+#     hook_weight: 0
+#     restartPolicy: Never
+#     command:
+#       - some_cmd
+#     args:
+#       - some
+#       - args
+
+apps:
+
+  nodebb:
+    deployment_enabled: true
+    replicaCount: 1
+    command:
+       - /bin/bash
+       - -c
+       - /opt/nodebb/start.sh
+    resources:
+      cpu: 100m
+      memory: 256Mi
+      memory_limit: 256Mi
+    autoscaler_enabled: false
+    service:
+      enabled: true
+      ports:
+        - name: http
+          targetPort: 4567
+          port: 8080
+    # TODO: add probes
+    #
+    # livenessProbe:
+    #   httpGet:
+    #     path: /live
+    #     port: 8080
+    # readinessProbe:
+    #   httpGet:
+    #     path: /ready
+    #     port: 8080

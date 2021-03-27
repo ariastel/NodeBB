@@ -1,0 +1,61 @@
+---
+{{- if .Values.jobs }}
+{{- range $name, $job := .Values.jobs }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ $name }}"
+  namespace: "{{ $.Release.Namespace }}"
+  annotations:
+    helm.sh/hook: 'post-install,post-upgrade'
+    helm.sh/hook-weight: "{{ $job.hook_weight }}"
+    helm.sh/hook-delete-policy: 'before-hook-creation'
+{{ include "common_labels" $ | indent 4 }}
+spec:
+  activeDeadlineSeconds: 180
+  template:
+    metadata:
+      name: "{{ $name }}"
+      annotations:
+        timestamp: '{{ now | quote }}'
+    spec:
+      # nodeSelector:
+      #   env: '{{ $.Values.nodeSelector }}'
+      {{- if $.Values.affinity }}
+      affinity:
+      {{- toYaml $.Values.affinity | nindent 8 -}}
+      {{- end }}
+      restartPolicy: '{{ $job.restartPolicy }}'
+      containers:
+        - name: "{{ $name }}"
+          {{- if $job.image_tag_prefix }}
+          image: "{{ $.Values.image.registry }}/{{ $.Values.image.name }}:{{ $job.image_tag_prefix }}-{{ $.Values.image.tag }}"
+          {{- else }}
+          image: "{{ $.Values.image.registry }}/{{ $.Values.image.name }}:{{ $.Values.image.tag }}"
+          {{- end }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env:
+          {{- range $commonkey, $commonval := $.Values.env }}
+            - name: "{{$commonkey}}"
+              value: "{{$commonval}}"
+          {{- end }}
+          {{- if $.Values.secrets_env }}
+            {{- range $sname, $skey := $.Values.secrets_env.keys }}
+            - name: "{{ $sname }}"
+              valueFrom:
+                secretKeyRef:
+                  key: "{{ $skey }}"
+                  name: "{{ $.Release.Name }}"
+            {{- end }}
+          {{- end }}
+          {{- range $key, $val := $job.env }}
+            - name: "{{$key}}"
+              value: "{{$val}}"
+          {{- end }}
+          command:
+            - bash
+            - -c
+            - "{{ $job.command }}"
+---
+{{- end }}
+{{- end }}

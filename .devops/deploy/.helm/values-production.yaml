@@ -1,0 +1,77 @@
+---
+nodeSelector: ''
+
+image:
+  tag: release
+
+ingress:
+  certificate_arn: ''
+  group: ''
+  subnets: ''
+
+# affinity:
+#   nodeAffinity:
+#     preferredDuringSchedulingIgnoredDuringExecution:
+#     - weight: 80
+#       preference:
+#         matchExpressions:
+#         - key: eks.amazonaws.com/capacityType
+#           operator: In
+#           values:
+#             - SPOT
+
+# jobs:
+
+#   psql-migrate-job:
+#     env:
+#       NODE_ENV: production
+#       MONGO_DATABASE: nodebb
+#       MONGO_HOST: mongodb-production-headless.production.svc.cluster.local
+#       MONGO_PORT: 27017
+#       MONGO_USER: nodebb
+#       MONGO_PASS: awesomepassword1
+
+#   psql-seed-job:
+#     env:
+#       NODE_ENV: production
+#       MONGO_DATABASE: nodebb
+#       MONGO_HOST: mongodb-production-headless.production.svc.cluster.local
+#       MONGO_PORT: 27017
+#       MONGO_USER: nodebb
+#       MONGO_PASS: awesomepassword1
+
+apps:
+
+  nodebb:
+    replicaCount: 3
+    # topologySpreadConstraints_enabled: true
+    resources:
+      cpu: 250m
+      cpu_limit: 250m
+      memory: 512Mi
+      memory_limit: 512Mi
+    autoscaler_enabled: true
+    autoscaler_min: 3
+    autoscaler_max: 25
+    target_cpuutilization: 80
+    # service:
+    #   ingress:
+    #     domain: ritotalks.ru
+    #     scheme: internet-facing
+    env:
+      NODE_ENV: production
+      MONGO_DATABASE: nodebb
+      MONGO_HOST: mongodb-production-headless.production.svc.cluster.local
+      MONGO_PORT: 27017
+      MONGO_USER: nodebb
+      MONGO_PASS: awesomepassword1
+      # REDIS_HOST: ritotalks-production-001.some_thing.0001.euc1.cache.amazonaws.com
+      # REDIS_PORT: 6379
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET: s3-ritotalks-cdn
+
+# secrets_env:
+#   name: sm-ritotalks-production
+#   keys:
+#     AMAZON_S3_SECRET_KEY: aws_secret_access_key
+#     AMAZON_S3_ACCESS_KEY: aws_access_key_id

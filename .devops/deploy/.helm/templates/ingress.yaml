@@ -1,0 +1,35 @@
+---
+{{- range $name, $app := .Values.apps }}
+{{ if and (hasKey $app "service") (hasKey $app.service "ingress") -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: "{{ $name }}"
+  namespace: "{{ $.Release.Namespace }}"
+  annotations:
+{{/*    TODO: "{{ lookup('aws_ssm', '/datacenter/k8s/services/certificates/argocd.k8s.' + lookup('aws_ssm', '/datacenter/zone') | regex_replace('\\.$', '')) }}"*/}}
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: '{{ $app.service.ingress.scheme }}'
+    alb.ingress.kubernetes.io/certificate-arn: '{{ $.Values.ingress.certificate_arn }}'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/group.name: '{{ $.Values.ingress.group }}'
+    alb.ingress.kubernetes.io/subnets: '{{ $.Values.ingress.subnets }}'
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+{{ include "common_labels" $ | indent 4 }}
+spec:
+  rules:
+    - host: '{{ $app.service.ingress.domain}}'
+      http:
+        paths:
+          - path: /* # SSL Redirect Setting
+            backend:
+              serviceName: ssl-redirect
+              servicePort: use-annotation
+          - backend:
+              serviceName: '{{ $name }}'
+              {{- with (first $app.service.ports) }}
+              servicePort: {{ .port }}
+              {{- end }}
+---
+{{- end }}
+{{- end }}

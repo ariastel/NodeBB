@@ -1,0 +1,8 @@
+# Example for additional files with config in container
+{{/*apiVersion: v1*/}}
+{{/*kind: ConfigMap*/}}
+{{/*metadata:*/}}
+{{/*  name: "{{ .Release.Name }}-conf"*/}}
+{{/*data:*/}}
+{{/*  environment.json: |*/}}
+{{/*   {{ .Values.config | toJson }}*/}}

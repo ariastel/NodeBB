@@ -1,0 +1,132 @@
+---
+{{- range $name, $app := .Values.apps }}
+{{- if $app.deployment_enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ $name }}"
+  namespace: "{{ $.Release.Namespace }}"
+  labels:
+    app: {{ $name }}
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/component: {{ $name }}
+{{ include "common_labels" $ | indent 4 }}
+spec:
+  revisionHistoryLimit: 2
+  replicas: {{ $app.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      annotations:
+        timestamp: '{{ now | quote }}'
+        {{- range $fmap := $app.files }}
+        checksum/{{ $fmap.name }}: {{ include (print print $.Template.BasePath "/configs/" $fmap.name ".yaml" ) $ | sha256sum }}
+        {{- end }}
+      labels:
+        app: {{ $name }}
+    spec:
+      {{- if $app.topologySpreadConstraints_enabled }}
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: {{ $name }}
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: {{ $name }}
+      {{- end }}
+      # nodeSelector:
+      #   env: '{{ $.Values.nodeSelector }}'
+      {{- if $.Values.affinity }}
+      affinity:
+      {{- toYaml $.Values.affinity | nindent 8 -}}
+      {{- end }}
+      terminationGracePeriodSeconds: 120
+      {{- if $app.files }}
+      volumes:
+        {{- range $fmap := $app.files }}
+        - name: "{{ $.Release.Name }}-{{ $fmap.name }}"
+          configMap:
+            name: "{{ $.Release.Name }}-{{ $fmap.name }}"
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ $name }}
+          {{- if $app.image_tag_prefix }}
+          image: "{{ $.Values.image.registry }}{{ $.Values.image.name }}:{{ $app.image_tag_prefix }}-{{ $.Values.image.tag }}"
+          {{- else }}
+          image: "{{ $.Values.image.registry }}{{ $.Values.image.name }}:{{ $.Values.image.tag }}"
+          {{- end }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env:
+          {{- range $commonkey, $commonval := $.Values.env }}
+            - name: "{{$commonkey}}"
+              value: "{{$commonval}}"
+          {{- end }}
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          {{- if $.Values.secrets_env }}
+            {{- range $sname, $skey := $.Values.secrets_env.keys }}
+            - name: "{{ $sname }}"
+              valueFrom:
+                secretKeyRef:
+                  key: "{{ $skey }}"
+                  name: "{{ $.Release.Name }}"
+            {{- end }}
+          {{- end }}
+          {{- range $key, $val := $app.env }}
+            - name: "{{$key}}"
+              value: "{{$val}}"
+          {{- end }}
+          {{- if $app.command }}
+          command:
+            {{- range $app.command }}
+            - {{ . }}
+            {{- end }}
+          {{- end }}
+          {{- if $app.args }}
+          args:
+            {{- range $app.args }}
+            - {{ . }}
+            {{- end }}
+          {{- end }}
+          {{- if $app.files }}
+          volumeMounts:
+            {{- range $fmap := $app.files }}
+            - mountPath: {{ $fmap.path }}
+              name: "{{ $.Release.Name }}-{{ $fmap.name }}"
+              readOnly: true
+              {{- if $fmap.file }}
+              subPath: {{ $fmap.file }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- if and $app.resources.cpu_limit $app.resources.memory_limit }}
+            limits:
+              cpu: "{{ $app.resources.cpu_limit }}"
+              memory: "{{ $app.resources.memory_limit }}"
+            {{- end }}
+            requests:
+              cpu: "{{ $app.resources.cpu }}"
+              memory: "{{ $app.resources.memory }}"
+          {{- if $app.livenessProbe }}
+          livenessProbe:
+          {{- toYaml $app.livenessProbe | nindent 12 -}}
+          {{- end -}}
+          {{- if $app.readinessProbe }}
+          readinessProbe:
+          {{- toYaml $app.readinessProbe | nindent 12 -}}
+          {{- end }}
+---
+{{- end }}
+{{- end }}

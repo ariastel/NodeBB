@@ -1,7 +1,9 @@
 FROM node:lts
 
-RUN mkdir -p /opt/nodebb
-WORKDIR /opt/nodebb
+LABEL Description="RitoTalks: backend application image" \
+      Vendor="" \
+      Version="0.1.0" \
+      Maintainer=""
 
 ARG NODE_ENV
 ENV NODE_ENV $NODE_ENV
@@ -24,15 +26,8 @@ ENV MONGO_PASS $MONGO_PASS
 ARG MONGO_DATABASE
 ENV MONGO_DATABASE $MONGO_DATABASE
 
-ARG AWS_ACCESS_KEY_ID
-ENV AWS_ACCESS_KEY_ID $AWS_ACCESS_KEY_ID
-ARG AWS_SECRET_ACCESS_KEY
-ENV AWS_SECRET_ACCESS_KEY $AWS_SECRET_ACCESS_KEY
-
-ARG S3_UPLOADS_BUCKET
-ENV S3_UPLOADS_BUCKET $S3_UPLOADS_BUCKET
-ARG S3_UPLOADS_HOST
-ENV S3_UPLOADS_HOST $S3_UPLOADS_HOST
+RUN mkdir -p /opt/nodebb
+WORKDIR /opt/nodebb
 
 COPY install/package.json /opt/nodebb/package.json
 
@@ -41,13 +36,13 @@ RUN apt-get update && apt-get install -y gettext-base && \
     npm cache clean --force
 
 COPY . /opt/nodebb
-COPY k8s.config.json.template .
-COPY k8s.start.sh ./start.sh
+COPY .devops/build/k8s.config.json.template .
+COPY .devops/build/k8s.start.sh ./start.sh
 
 ENV NODE_ENV=production \
     daemon=false \
     silent=false
 
-EXPOSE 4567
+EXPOSE $NODEBB_PORT
 
 CMD /opt/nodebb/start.sh
