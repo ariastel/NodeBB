@@ -5,6 +5,9 @@ LABEL Description="RitoTalks: backend application image" \
       Version="0.1.0" \
       Maintainer=""
 
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN $GITHUB_TOKEN
+
 ARG NODE_ENV
 ENV NODE_ENV $NODE_ENV
 
@@ -38,6 +41,8 @@ RUN apt-get update && apt-get install -y gettext-base && \
 COPY . /opt/nodebb
 COPY .devops/build/k8s.config.json.template .
 COPY .devops/build/k8s.start.sh ./start.sh
+
+RUN echo "//npm.pkg.github.com/:_authToken=GITHUB_TOKEN" > ~/.npmrc
 
 ENV NODE_ENV=production \
     daemon=false \
