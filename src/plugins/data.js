@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const nconf = require('nconf');
 const path = require('path');
 const winston = require('winston');
 
@@ -12,8 +13,23 @@ const Data = module.exports;
 
 const basePath = path.join(__dirname, '../../');
 
+
+Data.getInstalledPlugins = async function getInstalledPlugins() {
+	const packageJson = await fs.promises.readFile(paths.currentPackage, 'utf-8');
+	try {
+		const packageData = JSON.parse(packageJson);
+		return Object.keys(packageData.dependencies).filter(dependency => dependency.includes('nodebb-'));
+	} catch (err) {
+		winston.error('[plugins] Error in main package.json!' + err.stack);
+		throw new Error('[[error:parse-error]]');
+	}
+};
+
 Data.getPluginPaths = async function () {
-	let plugins = await db.getSortedSetRange('plugins:active', 0, -1);
+	const useLocalPlugins = nconf.get('NODEBB_USE_LOCAL_PLUGINS') === 'true';
+	let plugins = useLocalPlugins	?
+		await Data.getInstalledPlugins() :
+		await db.getSortedSetRange('plugins:active', 0, -1);
 	plugins = plugins.filter(plugin => plugin && typeof plugin === 'string')
 		.map(plugin => path.join(paths.nodeModules, plugin));
 

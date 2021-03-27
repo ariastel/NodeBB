@@ -134,9 +134,11 @@ Themes.set = async (data) => {
 };
 
 Themes.setupPaths = async () => {
-	const data = await utils.promiseParallel({
+	var envThemeId = nconf.get('NODEBB_THEME_ID');
+
+	var data = await utils.promiseParallel({
 		themesData: Themes.get(),
-		currentThemeId: Meta.configs.get('theme:id'),
+		currentThemeId: envThemeId || Meta.configs.get('theme:id'),
 	});
 
 	var themeId = data.currentThemeId || 'nodebb-theme-persona';

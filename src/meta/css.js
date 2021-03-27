@@ -102,7 +102,10 @@ async function getBundleMetadata(target) {
 	}
 	let skinImport = [];
 	if (target === 'client') {
-		const themeData = await db.getObjectFields('config', ['theme:type', 'theme:id', 'bootswatchSkin']);
+		const useLocalPlugins = nconf.get('NODEBB_USE_LOCAL_THEME') === 'true';
+		const themeData = useLocalPlugins ?
+			{ 'theme:id': nconf.get('NODEBB_THEME_ID'), bootswatchSkin: '', 'theme:type': 'local' } :
+			await db.getObjectFields('config', ['theme:type', 'theme:id', 'bootswatchSkin']);
 		const themeId = (themeData['theme:id'] || 'nodebb-theme-persona');
 		const baseThemePath = path.join(nconf.get('themes_path'), (themeData['theme:type'] && themeData['theme:type'] === 'local' ? themeId : 'nodebb-theme-vanilla'));
 		paths.unshift(baseThemePath);

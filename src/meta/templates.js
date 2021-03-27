@@ -122,7 +122,11 @@ async function compile() {
 	await _rimraf(viewsPath);
 	await mkdirp(viewsPath);
 
-	let files = await db.getSortedSetRange('plugins:active', 0, -1);
+	const useLocalPlugins = nconf.get('NODEBB_USE_LOCAL_PLUGINS') === 'true';
+
+	let files = useLocalPlugins ?
+		await plugins.data.getInstalledPlugins() :
+		await db.getSortedSetRange('plugins:active', 0, -1);
 	files = await getTemplateDirs(files);
 	files = await getTemplateFiles(files);
 
