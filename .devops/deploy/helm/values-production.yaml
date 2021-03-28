@@ -62,7 +62,7 @@ apps:
       NODE_ENV: production
       NODEBB_URL: http://ritotalks.ru
       NODEBB_PORT: 8080
-      NODEBB_SECRET: vs8HL5rmWJGUzDbqDnSbwNPFGnCx9Yg7
+      NODEBB_SECRET: CTsNDeHNHX9jBnQFgz9WbqkhsQaA24vj
       MONGO_DATABASE: nodebb
       MONGO_HOST: mongodb-production-headless.production.svc.cluster.local
       MONGO_PORT: 27017
