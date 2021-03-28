@@ -4,7 +4,7 @@ nodeSelector: ''
 image:
   registry: ''
   name: nodebb-backend
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
   tag: latest
 
 # jobs:
