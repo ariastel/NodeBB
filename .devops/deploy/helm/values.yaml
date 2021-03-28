@@ -41,6 +41,8 @@ apps:
        - /bin/bash
        - -c
        - /opt/nodebb/start.sh
+    # command: [ "/bin/bash", "-c", "--" ]
+    # args: [ "while true; do sleep 60; done;" ]
     resources:
       cpu: 100m
       memory: 256Mi
@@ -50,15 +52,13 @@ apps:
       enabled: true
       ports:
         - name: http
-          targetPort: 4567
-          port: 8080
-    # TODO: add probes
-    #
+          targetPort: 80
+          port: 80
     # livenessProbe:
     #   httpGet:
-    #     path: /live
-    #     port: 8080
+    #     path: /
+    #     port: 80
     # readinessProbe:
     #   httpGet:
-    #     path: /ready
-    #     port: 8080
+    #     path: /
+    #     port: 80

@@ -43,7 +43,7 @@ ingress:
 apps:
 
   nodebb:
-    replicaCount: 3
+    replicaCount: 1
     # topologySpreadConstraints_enabled: true
     resources:
       cpu: 250m
@@ -51,15 +51,18 @@ apps:
       memory: 512Mi
       memory_limit: 512Mi
     autoscaler_enabled: true
-    autoscaler_min: 3
+    autoscaler_min: 1
     autoscaler_max: 25
     target_cpuutilization: 80
-    # service:
-    #   ingress:
-    #     domain: ritotalks.ru
-    #     scheme: internet-facing
+    service:
+      ingress:
+        domain: ritotalks.ru
+        scheme: internet-facing
     env:
       NODE_ENV: production
+      NODEBB_URL: http://ritotalks.ru
+      NODEBB_PORT: 80
+      NODEBB_SECRET: vs8HL5rmWJGUzDbqDnSbwNPFGnCx9Yg7
       MONGO_DATABASE: nodebb
       MONGO_HOST: mongodb-production-headless.production.svc.cluster.local
       MONGO_PORT: 27017
