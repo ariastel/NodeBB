@@ -421,9 +421,8 @@ async function enableDefaultPlugins() {
 		'nodebb-widget-essentials',
 		'nodebb-rewards-essentials',
 		'nodebb-plugin-emoji',
-		'nodebb-plugin-emoji-android',
 	];
-	let customDefaults = nconf.get('defaultplugins') || nconf.get('defaultPlugins');
+	let customDefaults = nconf.get('defaultplugins') || nconf.get('defaultPlugins') || require('../install/data/default-plugins.json');
 
 	winston.info('[install/defaultPlugins] customDefaults', customDefaults);
 
