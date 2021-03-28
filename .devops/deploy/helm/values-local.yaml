@@ -60,6 +60,11 @@ apps:
     env:
       AWS_REGION: us-east-1
       AWS_S3_BUCKET: s3-ritotalks-cdn
+
+      S3_UPLOADS_BUCKET: s3-ritotalks-cdn
+      S3_UPLOADS_HOST: https://cdn.ritotalks.ru/local
+      S3_UPLOADS_PATH: /local
+
       NODE_ENV: production
       NODEBB_URL: http://ritotalks.ru
       NODEBB_PORT: 8080
@@ -69,6 +74,7 @@ apps:
       MONGO_PORT: 27017
       MONGO_USER: nodebb
       MONGO_PASS: awesomepassword1
+
       # REDIS_HOST: ritotalks-production-001.some_thing.0001.euc1.cache.amazonaws.com
       # REDIS_PORT: 6379
 
