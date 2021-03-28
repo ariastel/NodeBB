@@ -31,5 +31,10 @@ install:
 
 .PHONY: delete
 delete:
-	helm uninstall rt-nodebb-development \
-		-n development
+	helm uninstall rt-nodebb-production \
+		-n production
+
+# .PHONY: delete
+# delete:
+# 	helm uninstall rt-nodebb-development \
+# 		-n development
