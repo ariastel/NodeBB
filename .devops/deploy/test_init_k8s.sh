@@ -1,3 +1,3 @@
 #!/bin/bash
 
-kubectl create ns production
+kubectl create ns local

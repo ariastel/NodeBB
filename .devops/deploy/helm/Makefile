@@ -1,40 +1,20 @@
 
-.PHONY: template-development
-template-development:
-	helm template rt-nodebb-development \
-		-n development \
-		-f values-development.yaml \
-		. > generated.yaml
-
-.PHONY: template-production
+.PHONY: template
 template-production:
-	helm template rt-nodebb-production \
-		-n production \
-		-f values-production.yaml \
+	helm template nodebb \
+		-n local \
+		-f values-local.yaml \
 		. > generated.yaml
 
 .PHONY: install
 install:
-	helm upgrade rt-nodebb-production \
-		-n production \
-		-f values-production.yaml \
+	helm upgrade nodebb \
+		-n local \
+		-f values-local.yaml \
 		--install \
 		.
 
-# .PHONY: install
-# install:
-# 	helm upgrade rt-development \
-# 		-n development \
-# 		-f values.yaml \
-# 		--install \
-# 		.
-
 .PHONY: delete
 delete:
-	helm uninstall rt-nodebb-production \
-		-n production
-
-# .PHONY: delete
-# delete:
-# 	helm uninstall rt-nodebb-development \
-# 		-n development
+	helm uninstall nodebb \
+		-n local

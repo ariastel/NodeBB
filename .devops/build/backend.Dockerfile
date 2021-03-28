@@ -1,8 +1,8 @@
 FROM node:lts
 
 LABEL Description="RitoTalks: backend application image" \
-      Vendor="" \
-      Version="0.1.0" \
+      Vendor="AriastelDev" \
+      Version="1.0.0" \
       Maintainer=""
 
 ARG GITHUB_TOKEN

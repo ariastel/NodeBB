@@ -26,7 +26,7 @@ ingress:
 #     env:
 #       NODE_ENV: production
 #       MONGO_DATABASE: nodebb
-#       MONGO_HOST: mongodb-production-headless.production.svc.cluster.local
+#       MONGO_HOST: mongodb-headless.local.svc.cluster.local
 #       MONGO_PORT: 27017
 #       MONGO_USER: nodebb
 #       MONGO_PASS: awesomepassword1
@@ -35,7 +35,7 @@ ingress:
 #     env:
 #       NODE_ENV: production
 #       MONGO_DATABASE: nodebb
-#       MONGO_HOST: mongodb-production-headless.production.svc.cluster.local
+#       MONGO_HOST: mongodb-headless.local.svc.cluster.local
 #       MONGO_PORT: 27017
 #       MONGO_USER: nodebb
 #       MONGO_PASS: awesomepassword1
@@ -44,7 +44,6 @@ apps:
 
   nodebb:
     replicaCount: 1
-    # topologySpreadConstraints_enabled: true
     resources:
       cpu: 250m
       cpu_limit: 750m
@@ -59,19 +58,19 @@ apps:
         domain: ritotalks.ru
         scheme: internet-facing
     env:
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET: s3-ritotalks-cdn
       NODE_ENV: production
       NODEBB_URL: http://ritotalks.ru
       NODEBB_PORT: 8080
       NODEBB_SECRET: CTsNDeHNHX9jBnQFgz9WbqkhsQaA24vj
       MONGO_DATABASE: nodebb
-      MONGO_HOST: mongodb-production-headless.production.svc.cluster.local
+      MONGO_HOST: mongodb-headless.local.svc.cluster.local
       MONGO_PORT: 27017
       MONGO_USER: nodebb
       MONGO_PASS: awesomepassword1
       # REDIS_HOST: ritotalks-production-001.some_thing.0001.euc1.cache.amazonaws.com
       # REDIS_PORT: 6379
-      AWS_REGION: us-east-1
-      AWS_S3_BUCKET: s3-ritotalks-cdn
 
 # secrets_env:
 #   name: sm-ritotalks-production

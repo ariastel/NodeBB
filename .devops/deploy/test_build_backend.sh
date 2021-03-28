@@ -6,7 +6,7 @@ docker build \
   --build-arg NODEBB_SECRET="CTsNDeHNHX9jBnQFgz9WbqkhsQaA24vj" \
   --build-arg NODEBB_URL="http://ritotalks.ru" \
   --build-arg NODEBB_PORT="8080" \
-  --build-arg MONGO_HOST="mongodb-production-headless.production.svc.cluster.local" \
+  --build-arg MONGO_HOST="mongodb-headless.production.svc.cluster.local" \
   --build-arg MONGO_PORT="27017" \
   --build-arg MONGO_USER="nodebb" \
   --build-arg MONGO_PASS="awesomepassword1" \

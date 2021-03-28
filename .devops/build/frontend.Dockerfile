@@ -1,9 +1,9 @@
 # STEP 1: Build binary files
 FROM node:lts as builder
 
-LABEL Description="RitoTalks: frontend application image" \
-      Vendor="" \
-      Version="0.1.0" \
+LABEL Description="RitoTalks: backend application image" \
+      Vendor="AriastelDev" \
+      Version="1.0.0" \
       Maintainer=""
 
 ARG GITHUB_TOKEN
