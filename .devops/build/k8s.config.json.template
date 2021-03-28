@@ -12,5 +12,7 @@
     },
     "socket.io": {
         "transports": ["websocket"]
-    }
+    },
+    "jobsDisabled": true,
+    "isCluster": false
 }

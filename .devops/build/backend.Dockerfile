@@ -39,11 +39,7 @@ WORKDIR /opt/nodebb
 RUN echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > ~/.npmrc && \
     echo "@ariastel:registry=https://npm.pkg.github.com/" >> ~/.npmrc
 
-COPY install/package.json /opt/nodebb/package.json
-
-RUN apt-get update && apt-get install -y gettext-base && \
-    npm install --only=prod && \
-    npm cache clean --force
+RUN apt-get update && apt-get install -y gettext-base
 
 COPY . /opt/nodebb
 COPY .devops/build/k8s.config.json.template .
@@ -56,8 +52,11 @@ ENV NODE_ENV=production \
     daemon=false \
     silent=false
 
+RUN npm install --only=prod && \
+    npm cache clean --force
+
 RUN node ./nodebb build --series
 
 EXPOSE $NODEBB_PORT
 
-CMD /opt/nodebb/start.sh
+CMD bash
