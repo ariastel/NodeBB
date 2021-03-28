@@ -1,11 +1,11 @@
 #!/bin/bash
 
 docker build \
-  --build-arg GITHUB_TOKEN="4963af6b6ffeb55f71dce5a57afaebfc5c170e0a" \
+  --build-arg GITHUB_TOKEN="12345" \
   --build-arg NODE_ENV="production" \
   --build-arg NODEBB_SECRET="CTsNDeHNHX9jBnQFgz9WbqkhsQaA24vj" \
   --build-arg NODEBB_URL="http://ritotalks.ru" \
-  --build-arg NODEBB_PORT="80" \
+  --build-arg NODEBB_PORT="8080" \
   --build-arg MONGO_HOST="mongodb-production-headless.production.svc.cluster.local" \
   --build-arg MONGO_PORT="27017" \
   --build-arg MONGO_USER="nodebb" \
