@@ -43,15 +43,15 @@ ingress:
 apps:
 
   nodebb:
-    replicaCount: 3
+    replicaCount: 1
     # topologySpreadConstraints_enabled: true
     resources:
       cpu: 250m
-      cpu_limit: 250m
+      cpu_limit: 750m
       memory: 512Mi
-      memory_limit: 512Mi
+      memory_limit: 1024Mi
     autoscaler_enabled: true
-    autoscaler_min: 3
+    autoscaler_min: 1
     autoscaler_max: 25
     target_cpuutilization: 80
     service:
