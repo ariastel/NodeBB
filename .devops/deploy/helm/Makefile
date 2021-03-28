@@ -1,6 +1,6 @@
 
 .PHONY: template
-template-production:
+template:
 	helm template nodebb \
 		-n local \
 		-f values-local.yaml \
