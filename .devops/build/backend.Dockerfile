@@ -1,4 +1,4 @@
-FROM node:lts
+FROM 792522745996.dkr.ecr.eu-central-1.amazonaws.com/ecr-node:latest
 
 LABEL Description="RitoTalks: backend application image" \
       Vendor="AriastelDev" \
