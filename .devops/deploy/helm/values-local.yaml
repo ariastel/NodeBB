@@ -62,7 +62,7 @@ apps:
       AWS_S3_BUCKET: s3-ritotalks-cdn
 
       S3_UPLOADS_BUCKET: s3-ritotalks-cdn
-      S3_UPLOADS_HOST: https://cdn.ritotalks.ru/local
+      S3_UPLOADS_HOST: https://cdn.ritotalks.ru
       S3_UPLOADS_PATH: /local
 
       NODE_ENV: production
