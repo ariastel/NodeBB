@@ -9,5 +9,8 @@ envsubst < /opt/nodebb/k8s.config.json.template > /opt/nodebb/config.json || (ec
 # Run command below for upgrade
 # ./nodebb upgrade
 
+echo "Current nodebb config.json"
+cat /opt/nodebb/config.json
+
 echo "Starting nodebb..."
 ./nodebb start
