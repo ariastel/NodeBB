@@ -68,7 +68,7 @@ define('forum/account/settings', ['forum/account/header', 'components', 'transla
 
 	function saveSettings(settings) {
 		api.put(`/users/${ajaxify.data.uid}/settings`, { settings }).then((newSettings) => {
-			app.alertSuccess('[[success:settings-saved]]');
+			window.location.reload();
 			var languageChanged = false;
 			for (var key in newSettings) {
 				if (newSettings.hasOwnProperty(key)) {
