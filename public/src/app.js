@@ -688,6 +688,9 @@ app.cacheBuster = null;
 		}
 		require([
 			'jquery-ui/widgets/datepicker',
+			'jquery-ui/i18n/datepicker-ru',
+			'jquery-ui/i18n/datepicker-en-GB',
+			'jquery-ui/widgets/datepicker',
 			'jquery-ui/widgets/autocomplete',
 			'jquery-ui/widgets/sortable',
 			'jquery-ui/widgets/resizable',

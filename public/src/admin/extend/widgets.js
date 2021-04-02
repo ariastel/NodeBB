@@ -2,11 +2,14 @@
 
 
 define('admin/extend/widgets', [
+	'translator',
 	'jquery-ui/widgets/sortable',
 	'jquery-ui/widgets/draggable',
 	'jquery-ui/widgets/droppable',
 	'jquery-ui/widgets/datepicker',
-], function () {
+	'jquery-ui/i18n/datepicker-ru',
+	'jquery-ui/i18n/datepicker-en-GB',
+], function (translator) {
 	var Widgets = {};
 
 	Widgets.init = function () {
@@ -158,7 +161,9 @@ define('admin/extend/widgets', [
 	}
 
 	function createDatePicker(el) {
+		var lang = translator.getLanguage() === 'ru' ? 'ru' : 'en-GB';
 		var currentYear = new Date().getFullYear();
+		$.datepicker.setDefaults($.datepicker.regional[lang]);
 		el.find('.date-selector').datepicker({
 			changeMonth: true,
 			changeYear: true,

@@ -15,6 +15,8 @@ define('forum/account/edit', [
 		$('#submitBtn').on('click', updateProfile);
 
 		app.loadJQueryUI(function () {
+			var lang = translator.getLanguage() === 'ru' ? 'ru' : 'en-GB';
+			$.datepicker.setDefaults($.datepicker.regional[lang]);
 			$('#inputBirthday').datepicker({
 				changeMonth: true,
 				changeYear: true,
