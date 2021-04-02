@@ -20,7 +20,7 @@
   "@ariastel/nodebb-widget-stats",
   "@ariastel/nodebb-widget-super-pinned-news",
   "@ariastel/nodebb-widget-twitch",
-  "nodebb-plugin-composer-default",
+  "@ariastel/nodebb-plugin-composer-default",
   "nodebb-plugin-custom-pages",
   "nodebb-plugin-dbsearch",
   "nodebb-plugin-embed",
