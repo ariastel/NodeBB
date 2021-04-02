@@ -182,6 +182,7 @@ define('forum/account/header', [
 			flags.showFlagModal({
 				type: 'user',
 				id: ajaxify.data.uid,
+				name: ajaxify.data.username,
 			});
 		});
 	}

@@ -133,10 +133,12 @@ define('forum/topic/postTools', [
 
 		postContainer.on('click', '[component="post/flagUser"]', function () {
 			var uid = getData($(this), 'data-uid');
+			var username = getData($(this), 'data-username');
 			require(['flags'], function (flags) {
 				flags.showFlagModal({
 					type: 'user',
 					id: uid,
+					name: username,
 				});
 			});
 		});

@@ -8,6 +8,7 @@ define('flags', ['hooks', 'components'], function (hooks, components) {
 	var flagReason;
 
 	Flag.showFlagModal = function (data) {
+		data.name = data.name || data.id;
 		app.parseAndTranslate('partials/modals/flag_modal', data, function (html) {
 			flagModal = html;
 			flagModal.on('hidden.bs.modal', function () {
