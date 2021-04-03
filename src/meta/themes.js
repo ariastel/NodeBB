@@ -141,7 +141,7 @@ Themes.setupPaths = async () => {
 		currentThemeId: envThemeId || Meta.configs.get('theme:id'),
 	});
 
-	var themeId = data.currentThemeId || 'nodebb-theme-persona';
+	var themeId = data.currentThemeId || '@ariastel/nodebb-theme-ariastel';
 
 	if (process.env.NODE_ENV === 'development') {
 		winston.info('[themes] Using theme ' + themeId);

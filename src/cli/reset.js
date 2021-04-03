@@ -102,7 +102,7 @@ async function resetTheme(themeId) {
 }
 
 async function resetThemes() {
-	await resetThemeTo('nodebb-theme-persona');
+	await resetThemeTo('@ariastel/nodebb-theme-ariastel');
 }
 
 async function resetThemeTo(themeId) {

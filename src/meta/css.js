@@ -106,7 +106,7 @@ async function getBundleMetadata(target) {
 		const themeData = useLocalPlugins ?
 			{ 'theme:id': nconf.get('NODEBB_THEME_ID'), bootswatchSkin: '', 'theme:type': 'local' } :
 			await db.getObjectFields('config', ['theme:type', 'theme:id', 'bootswatchSkin']);
-		const themeId = (themeData['theme:id'] || 'nodebb-theme-persona');
+		const themeId = (themeData['theme:id'] || '@ariastel/nodebb-theme-ariastel');
 		const baseThemePath = path.join(nconf.get('themes_path'), (themeData['theme:type'] && themeData['theme:type'] === 'local' ? themeId : 'nodebb-theme-vanilla'));
 		paths.unshift(baseThemePath);
 

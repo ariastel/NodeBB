@@ -212,7 +212,7 @@ async function enableDefaultTheme() {
 		return;
 	}
 
-	const defaultTheme = nconf.get('defaultTheme') || 'nodebb-theme-persona';
+	const defaultTheme = nconf.get('defaultTheme') || '@ariastel/nodebb-theme-ariastel';
 	console.log('Enabling default theme: ' + defaultTheme);
 	await meta.themes.set({
 		type: 'local',

@@ -47,12 +47,12 @@ define('admin/appearance/themes', ['translator'], function (translator) {
 				if (confirm) {
 					socket.emit('admin.themes.set', {
 						type: 'local',
-						id: 'nodebb-theme-persona',
+						id: '@ariastel/nodebb-theme-ariastel',
 					}, function (err) {
 						if (err) {
 							return app.alertError(err.message);
 						}
-						highlightSelectedTheme('nodebb-theme-persona');
+						highlightSelectedTheme('@ariastel/nodebb-theme-ariastel');
 						app.alert({
 							alert_id: 'admin:theme',
 							type: 'success',
