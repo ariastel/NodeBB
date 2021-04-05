@@ -11,6 +11,9 @@ docker build \
   --build-arg MONGO_USER="nodebb" \
   --build-arg MONGO_PASS="awesomepassword1" \
   --build-arg MONGO_DATABASE="nodebb" \
+  --build-arg REDIS_HOST="ritotalks-production-001.some_thing.0001.euc1.cache.amazonaws.com" \
+  --build-arg REDIS_PORT="6379" \
+  --build-arg REDIS_DATABASE="0" \
   -t nodebb-backend:release \
   -f .devops/build/backend.Dockerfile \
   .

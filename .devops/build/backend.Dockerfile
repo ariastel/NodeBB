@@ -2,7 +2,7 @@ FROM 792522745996.dkr.ecr.eu-central-1.amazonaws.com/ecr-node:latest
 
 LABEL Description="RitoTalks: backend application image" \
       Vendor="AriastelDev" \
-      Version="1.0.0" \
+      Version="1.1.0" \
       Maintainer=""
 
 ARG GITHUB_TOKEN
@@ -32,6 +32,13 @@ ARG MONGO_PASS
 ENV MONGO_PASS $MONGO_PASS
 ARG MONGO_DATABASE
 ENV MONGO_DATABASE $MONGO_DATABASE
+
+ARG REDIS_HOST
+ENV REDIS_HOST $REDIS_HOST
+ARG REDIS_PORT
+ENV REDIS_PORT $REDIS_PORT
+ARG REDIS_DATABASE
+ENV REDIS_DATABASE $REDIS_DATABASE
 
 RUN mkdir -p /opt/nodebb
 WORKDIR /opt/nodebb
