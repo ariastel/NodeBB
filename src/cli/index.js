@@ -197,6 +197,7 @@ program
 	.description('Compile static assets ' + '(JS, CSS, templates, languages)'.red)
 	.option('-s, --series', 'Run builds in series without extra processes')
 	.action(function (targets, options) {
+		nconf.set('build-nodebb', true);
 		require('./manage').build(targets.length ? targets : true, options);
 	})
 	.on('--help', function () {

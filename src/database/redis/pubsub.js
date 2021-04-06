@@ -8,6 +8,10 @@ const connection = require('./connection');
 
 var channelName;
 var PubSub = function () {
+	if (nconf.get('build-nodebb')) {
+		return;
+	}
+
 	var self = this;
 	var subClient = connection.connect();
 	this.pubClient = connection.connect();
