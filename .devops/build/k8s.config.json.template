@@ -19,5 +19,5 @@
         "transports": ["websocket"]
     },
     "jobsDisabled": true,
-    "isCluster": false
+    "isCluster": true
 }
