@@ -23,6 +23,12 @@
 					<span class="mdl-switch__label"><strong>[[admin/settings/reputation:votes-are-public]]</strong></span>
 				</label>
 			</div>
+			<div class="checkbox">
+				<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
+					<input type="checkbox" class="mdl-switch__input" data-field="flags:allowFlagPrivileged">
+					<span class="mdl-switch__label"><strong>[[admin/settings/reputation:flags.can-flag-privileged]]</strong></span>
+				</label>
+			</div>
 		</form>
 	</div>
 </div>

@@ -118,8 +118,10 @@ module.exports = function (privileges) {
 		const minimumReputation = meta.config['min:rep:flag'];
 		let canFlag = reporterPrivileged || (userReputation >= minimumReputation);
 
-		if (targetPrivileged && !reporterPrivileged) {
-			canFlag = false;
+		if (!meta.config['flags:allowFlagPrivileged']) {
+			if (targetPrivileged && !reporterPrivileged) {
+				canFlag = false;
+			}
 		}
 
 		return { flag: canFlag };

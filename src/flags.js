@@ -273,12 +273,14 @@ Flags.validate = async function (payload) {
 	}
 
 	// Disallow flagging of profiles/content of privileged users
-	const [targetPrivileged, reporterPrivileged] = await Promise.all([
-		user.isPrivileged(target.uid),
-		user.isPrivileged(reporter.uid),
-	]);
-	if (targetPrivileged && !reporterPrivileged) {
-		throw new Error('[[error:cant-flag-privileged]]');
+	if (!meta.config['flags:allowFlagPrivileged']) {
+		const [targetPrivileged, reporterPrivileged] = await Promise.all([
+			user.isPrivileged(target.uid),
+			user.isPrivileged(reporter.uid),
+		]);
+		if (targetPrivileged && !reporterPrivileged) {
+			throw new Error('[[error:cant-flag-privileged]]');
+		}
 	}
 
 	if (payload.type === 'post') {
