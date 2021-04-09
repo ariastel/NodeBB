@@ -20,9 +20,9 @@ define('forum/account/edit', [
 			$('#inputBirthday').datepicker({
 				changeMonth: true,
 				changeYear: true,
-				yearRange: '1900:-5y',
+				yearRange: '-100y:-5y',
 				defaultDate: '-13y',
-			});
+			}).datepicker('setDate', new Date($('#inputBirthday').val()));
 		});
 
 		handleImageChange();
@@ -38,7 +38,7 @@ define('forum/account/edit', [
 			uid: $('#inputUID').val(),
 			fullname: $('#inputFullname').val(),
 			website: $('#inputWebsite').val(),
-			birthday: $('#inputBirthday').val(),
+			birthday: $('#inputBirthday').datepicker('getDate').toLocaleDateString('en-US'),
 			location: $('#inputLocation').val(),
 			groupTitle: $('#groupTitle').val(),
 			signature: $('#inputSignature').val(),
