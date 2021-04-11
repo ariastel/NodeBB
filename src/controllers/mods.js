@@ -183,13 +183,13 @@ function filterCategories(moderatedCids, categories) {
 
 	return categories.reduce(function (memo, cur) {
 		if (!moderatedCids) {
-			memo[cur.cid] = cur.name;
+			memo[cur.cid] = cur.text;
 			return memo;
 		}
 
 		// If mod, remove categories they can't moderate
 		if (moderatedCids.includes(String(cur.cid))) {
-			memo[cur.cid] = cur.name;
+			memo[cur.cid] = cur.text;
 		}
 
 		return memo;

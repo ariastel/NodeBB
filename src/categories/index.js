@@ -358,6 +358,7 @@ Categories.buildForSelectCategories = function (categories, fields) {
 	const pickFields = [
 		'cid', 'name', 'level', 'icon',	'parentCid',
 		'color', 'bgColor', 'backgroundImage', 'imageClass',
+		'text',
 	];
 	fields = fields || [];
 	if (fields.includes('text') && fields.includes('value')) {
