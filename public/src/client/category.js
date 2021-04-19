@@ -60,14 +60,12 @@ define('forum/category', [
 					return app.alertError(err.message);
 				}
 
-				$('[component="category/watching/menu"]').toggleClass('hidden', state !== 'watching');
-				$('[component="category/watching/check"]').toggleClass('fa-check', state === 'watching');
-
-				$('[component="category/notwatching/menu"]').toggleClass('hidden', state !== 'notwatching');
-				$('[component="category/notwatching/check"]').toggleClass('fa-check', state === 'notwatching');
-
-				$('[component="category/ignoring/menu"]').toggleClass('hidden', state !== 'ignoring');
-				$('[component="category/ignoring/check"]').toggleClass('fa-check', state === 'ignoring');
+				var attr = {
+					component: state === 'watching' ? 'category/watching' : 'category/notwatching',
+					'data-state': state === 'watching' ? 'notwatching' : 'watching',
+				};
+				$('[component="category/watching"]').attr(attr);
+				$('[component="category/notwatching"]').attr(attr);
 
 				app.alertSuccess('[[category:' + state + '.message]]');
 			});

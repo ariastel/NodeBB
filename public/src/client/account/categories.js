@@ -47,14 +47,12 @@ define('forum/account/categories', ['forum/account/header'], function (header) {
 	function updateDropdowns(modified_cids, state) {
 		modified_cids.forEach(function (cid) {
 			var category = $('[data-cid="' + cid + '"]');
-			category.find('[component="category/watching/menu"]').toggleClass('hidden', state !== 'watching');
-			category.find('[component="category/watching/check"]').toggleClass('fa-check', state === 'watching');
-
-			category.find('[component="category/notwatching/menu"]').toggleClass('hidden', state !== 'notwatching');
-			category.find('[component="category/notwatching/check"]').toggleClass('fa-check', state === 'notwatching');
-
-			category.find('[component="category/ignoring/menu"]').toggleClass('hidden', state !== 'ignoring');
-			category.find('[component="category/ignoring/check"]').toggleClass('fa-check', state === 'ignoring');
+			var attr = {
+				component: state === 'watching' ? 'category/watching' : 'category/notwatching',
+				'data-state': state === 'watching' ? 'notwatching' : 'watching',
+			};
+			category.find('[component="category/watching"]').attr(attr);
+			category.find('[component="category/notwatching"]').attr(attr);
 		});
 	}
 
