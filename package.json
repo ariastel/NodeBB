@@ -45,7 +45,7 @@
     "@ariastel/nodebb-plugin-question-and-answer": "1.0.1",
     "@ariastel/nodebb-plugin-s3-file-uploads": "1.1.1",
     "@ariastel/nodebb-plugin-share-vk": "1.0.1",
-    "@ariastel/nodebb-plugin-sso-discord-alt": "2.2.0",
+    "@ariastel/nodebb-plugin-sso-discord-alt": "2.2.1",
     "@ariastel/nodebb-plugin-sso-vk": "2.1.0",
     "@ariastel/nodebb-plugin-super-categories": "1.0.8",
     "@ariastel/nodebb-theme-ariastel": "1.2.3",
