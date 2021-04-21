@@ -58,6 +58,9 @@ module.exports = function (User) {
 		if (data.gdpr_consent === true) {
 			userData.gdpr_consent = 1;
 		}
+		if (data.gdpr_agree_email === true) {
+			userData.gdpr_agree_email = 1;
+		}
 		if (data.acceptTos === true) {
 			userData.acceptTos = 1;
 		}

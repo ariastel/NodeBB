@@ -245,8 +245,11 @@ User.addInterstitials = function (callback) {
 						digestEnabled: meta.config.dailyDigestFreq !== 'off',
 					},
 					callback: function (userData, formData, next) {
-						if (formData.gdpr_agree_data === 'on' && formData.gdpr_agree_email === 'on') {
+						if (formData.gdpr_agree_data === 'on') {
 							userData.gdpr_consent = true;
+						}
+						if (formData.gdpr_agree_email === 'on') {
+							userData.gdpr_agree_email = true;
 						}
 
 						next(userData.gdpr_consent ? null : new Error('[[register:gdpr_consent_denied]]'));
