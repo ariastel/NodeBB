@@ -127,6 +127,8 @@ get:
                     type: number
                   hideEmail:
                     type: number
+                  hideAge:
+                    type: number
                   inTopicSearchAvailable:
                     type: boolean
                   maxTopicsPerPage:

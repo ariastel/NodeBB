@@ -79,6 +79,12 @@
 			</div>
 			<div class="checkbox">
 				<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
+					<input class="mdl-switch__input" type="checkbox" data-field="hideAge">
+					<span class="mdl-switch__label"><strong>[[admin/settings/user:hide-age]]</strong></span>
+				</label>
+			</div>
+			<div class="checkbox">
+				<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
 					<input class="mdl-switch__input" type="checkbox" data-field="showFullnameAsDisplayName">
 					<span class="mdl-switch__label"><strong>[[admin/settings/user:show-fullname-as-displayname]]</strong></span>
 				</label>
@@ -281,6 +287,13 @@
 				<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
 					<input class="mdl-switch__input" type="checkbox" data-field="showfullname">
 					<span class="mdl-switch__label"><strong>[[admin/settings/user:show-fullname]]</strong></span>
+				</label>
+			</div>
+
+			<div class="checkbox">
+				<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
+					<input class="mdl-switch__input" type="checkbox" data-field="showage">
+					<span class="mdl-switch__label"><strong>[[admin/settings/user:show-age]]</strong></span>
 				</label>
 			</div>
 

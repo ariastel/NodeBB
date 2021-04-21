@@ -50,6 +50,10 @@ helpers.getUserDataByUserSlug = async function (userslug, callerUID) {
 		userData.fullname = '';
 	}
 
+	if (!isAdmin && !isGlobalModerator && !isSelf && (!userSettings.showage || meta.config.hideAge)) {
+		userData.age = '';
+	}
+
 	if (isAdmin || isSelf || (canViewInfo && !results.isTargetAdmin)) {
 		userData.ips = results.ips;
 	}

@@ -44,6 +44,7 @@ module.exports = function (User) {
 
 		settings.showemail = parseInt(getSetting(settings, 'showemail', 0), 10) === 1;
 		settings.showfullname = parseInt(getSetting(settings, 'showfullname', 0), 10) === 1;
+		settings.showage = parseInt(getSetting(settings, 'showage', 0), 10) === 1;
 		settings.openOutgoingLinksInNewTab = parseInt(getSetting(settings, 'openOutgoingLinksInNewTab', 0), 10) === 1;
 		settings.dailyDigestFreq = getSetting(settings, 'dailyDigestFreq', 'off');
 		settings.usePagination = parseInt(getSetting(settings, 'usePagination', 0), 10) === 1;
@@ -113,6 +114,7 @@ module.exports = function (User) {
 
 		const settings = {
 			showemail: data.showemail,
+			showage: data.showage,
 			showfullname: data.showfullname,
 			openOutgoingLinksInNewTab: data.openOutgoingLinksInNewTab,
 			dailyDigestFreq: data.dailyDigestFreq || 'off',

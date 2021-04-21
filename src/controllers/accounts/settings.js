@@ -109,6 +109,7 @@ settingsController.get = async function (req, res, next) {
 
 	userData.hideFullname = meta.config.hideFullname || 0;
 	userData.hideEmail = meta.config.hideEmail || 0;
+	userData.hideAge = meta.config.hideAge || 0;
 
 	userData.inTopicSearchAvailable = plugins.hooks.hasListeners('filter:topic.search');
 
