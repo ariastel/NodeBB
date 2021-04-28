@@ -12,6 +12,15 @@ define('notifications', [
 
 	var unreadNotifs = {};
 
+	var r = Math.ceil(window.devicePixelRatio) || 1;
+	var size = 12 * r;
+	Tinycon.setOptions({
+		width: 8,
+		height: 10,
+		font: size + 'px arial',
+		color: '#FFF',
+	});
+
 	Notifications.loadNotifications = function (notifList) {
 		socket.emit('notifications.get', null, function (err, data) {
 			if (err) {
