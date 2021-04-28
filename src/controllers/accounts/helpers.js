@@ -188,7 +188,7 @@ async function getProfileMenu(uid, callerUID) {
 		id: 'sessions',
 		route: 'sessions',
 		name: '[[pages:account/sessions]]',
-		icon: 'fa-group',
+		icon: 'fa-desktop',
 		visibility: {
 			self: true,
 			other: false,
