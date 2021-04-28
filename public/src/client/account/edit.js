@@ -22,7 +22,11 @@ define('forum/account/edit', [
 				changeYear: true,
 				yearRange: '-100y:-5y',
 				defaultDate: '-13y',
-			}).datepicker('setDate', new Date($('#inputBirthday').val()));
+			});
+			var val = $('#inputBirthday').val();
+			if (val) {
+				$('#inputBirthday').datepicker('setDate', new Date(val));
+			}
 		});
 
 		handleImageChange();
@@ -34,11 +38,12 @@ define('forum/account/edit', [
 	};
 
 	function updateProfile() {
+		var birthday = $('#inputBirthday').datepicker('getDate');
 		var userData = {
 			uid: $('#inputUID').val(),
 			fullname: $('#inputFullname').val(),
 			website: $('#inputWebsite').val(),
-			birthday: $('#inputBirthday').datepicker('getDate').toLocaleDateString('en-US'),
+			birthday: birthday ? birthday.toLocaleDateString('en-US') : '',
 			location: $('#inputLocation').val(),
 			groupTitle: $('#groupTitle').val(),
 			signature: $('#inputSignature').val(),
