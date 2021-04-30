@@ -649,7 +649,8 @@ Flags.getHistory = async function (flagId) {
 	let history = await db.getSortedSetRevRangeWithScores('flag:' + flagId + ':history', 0, -1);
 	const targetUid = await db.getObjectField('flag:' + flagId, 'targetUid');
 
-	history = history.map(function (entry) {
+	// AA: REFACTOR
+	history = await Promise.all(history.map(async function (entry) {
 		entry.value = JSON.parse(entry.value);
 
 		uids.push(entry.value[0]);
@@ -660,13 +661,17 @@ Flags.getHistory = async function (flagId) {
 			changeset.state = changeset.state === undefined ? '' : '[[flags:state-' + changeset.state + ']]';
 		}
 
+		if (changeset.hasOwnProperty('assignee')) {
+			changeset.assignee = changeset.assignee === undefined ? '' : await user.getUserField(changeset.assignee, 'username');
+		}
+
 		return {
 			uid: entry.value[0],
 			fields: changeset,
 			datetime: entry.score,
 			datetimeISO: utils.toISOString(entry.score),
 		};
-	});
+	}));
 
 	// Append ban history and username change data
 	history = await mergeBanHistory(history, targetUid, uids);
