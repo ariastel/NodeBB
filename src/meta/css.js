@@ -16,9 +16,7 @@ const minifier = require('./minifier');
 const CSS = module.exports;
 
 CSS.supportedSkins = [
-	'cerulean', 'cyborg', 'flatly', 'journal', 'lumen', 'paper', 'simplex',
-	'spacelab', 'united', 'cosmo', 'darkly', 'readable', 'sandstone',
-	'slate', 'superhero', 'yeti',
+	'dark',
 ];
 
 const buildImports = {
@@ -112,8 +110,8 @@ async function getBundleMetadata(target) {
 
 		themeData.bootswatchSkin = skin || themeData.bootswatchSkin;
 		if (themeData && themeData.bootswatchSkin) {
-			skinImport.push('\n@import "./@nodebb/bootswatch/' + themeData.bootswatchSkin + '/variables.less";');
-			skinImport.push('\n@import "./@nodebb/bootswatch/' + themeData.bootswatchSkin + '/bootswatch.less";');
+			skinImport.push('\n@import "./@ariastel/nodebb-ariastel-skins/' + themeData.bootswatchSkin + '/variables.less";');
+			skinImport.push('\n@import "./@ariastel/nodebb-ariastel-skins/' + themeData.bootswatchSkin + '/bootswatch.less";');
 		}
 		skinImport = skinImport.join('');
 	}

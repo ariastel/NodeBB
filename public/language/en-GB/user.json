@@ -148,6 +148,8 @@
 	"no-group-title": "No group title",
 
 	"select-skin": "Select a Skin",
+	"skin.default": "Light theme",
+	"skin.dark": "Dark theme",
 
 	"select-homepage": "Select a Homepage",
 	"homepage": "Homepage",
