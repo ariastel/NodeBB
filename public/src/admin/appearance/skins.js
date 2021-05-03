@@ -6,10 +6,15 @@ define('admin/appearance/skins', ['translator'], function (translator) {
 
 	Skins.init = function () {
 		// Populate skins from Bootswatch API
-		$.ajax({
+		/* $.ajax({
 			method: 'get',
 			url: 'https://bootswatch.com/api/3.json',
-		}).done(Skins.render);
+		}).done(Skins.render); */
+
+		Skins.render({
+			themes: [{ name: 'light' }, { name: 'dark' }],
+		});
+
 
 		$('#skins').on('click', function (e) {
 			var target = $(e.target);

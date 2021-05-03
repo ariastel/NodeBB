@@ -58,6 +58,7 @@ settingsController.get = async function (req, res, next) {
 
 	userData.bootswatchSkinOptions = [
 		{ name: '[[user:skin.default]]', value: '' },
+		{ name: '[[user:skin.light]]', value: 'light' },
 		{ name: '[[user:skin.dark]]', value: 'dark' },
 	];
 

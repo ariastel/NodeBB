@@ -16,6 +16,7 @@ const minifier = require('./minifier');
 const CSS = module.exports;
 
 CSS.supportedSkins = [
+	'light',
 	'dark',
 ];
 
