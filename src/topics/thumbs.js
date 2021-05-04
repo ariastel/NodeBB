@@ -90,6 +90,14 @@ Thumbs.migrate = async function (uuid, id) {
 	cache.del(set);
 };
 
+Thumbs.migrateToUuid = async function (uuid, newUuid) {
+	// Converts the draft thumb zset to the topic zset (combines thumbs if applicable)
+	const set = `draft:${uuid}:thumbs`;
+	const newSet = `draft:${newUuid}:thumbs`;
+	await db.rename(set, newSet);
+	cache.del(set);
+};
+
 Thumbs.delete = async function (id, relativePath) {
 	const isDraft = validator.isUUID(String(id));
 	const set = `${isDraft ? 'draft' : 'topic'}:${id}:thumbs`;

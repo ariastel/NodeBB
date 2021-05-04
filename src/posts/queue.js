@@ -101,6 +101,7 @@ module.exports = function (Posts) {
 		await notifications.push(notifObj, uids);
 		return {
 			id: id,
+			uuid: data.uuid,
 			type: type,
 			queued: true,
 			message: '[[success:post-queued]]',
@@ -171,6 +172,7 @@ module.exports = function (Posts) {
 
 	async function createTopic(data) {
 		const result = await topics.post(data);
+		await topics.thumbs.migrate(data.uuid, result.topicData.tid);
 		socketHelpers.notifyNew(data.uid, 'newTopic', { posts: [result.postData], topic: result.topicData });
 	}
 

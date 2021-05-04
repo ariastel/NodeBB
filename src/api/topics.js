@@ -5,6 +5,7 @@ const topics = require('../topics');
 const posts = require('../posts');
 const meta = require('../meta');
 const privileges = require('../privileges');
+const utils = require('../utils');
 
 const apiHelpers = require('./helpers');
 const doTopicAction = apiHelpers.doTopicAction;
@@ -42,7 +43,10 @@ topicsAPI.create = async function (caller, data) {
 	await meta.blacklist.test(caller.ip);
 	const shouldQueue = await posts.shouldQueue(caller.uid, payload);
 	if (shouldQueue) {
+		const oldUUID = payload.uuid;
+		payload.uuid = utils.generateUUID();
 		const queueObj = await posts.addToQueue(payload);
+		await topics.thumbs.migrate(oldUUID, payload.uuid);
 		return queueObj;
 	}
 
