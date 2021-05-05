@@ -1,5 +1,6 @@
 [
   "@ariastel/nodebb-plugin-archive-deleted",
+  "@ariastel/nodebb-plugin-category-combiner",
   "@ariastel/nodebb-plugin-category-queue",
   "@ariastel/nodebb-plugin-composer-default",
   "@ariastel/nodebb-plugin-custom-homepage",
@@ -14,6 +15,7 @@
   "@ariastel/nodebb-plugin-question-and-answer",
   "@ariastel/nodebb-plugin-s3-file-uploads",
   "@ariastel/nodebb-plugin-share-vk",
+  "@ariastel/nodebb-plugin-signature-display",
   "@ariastel/nodebb-plugin-sso-discord-alt",
   "@ariastel/nodebb-plugin-sso-google",
   "@ariastel/nodebb-plugin-sso-riot",
