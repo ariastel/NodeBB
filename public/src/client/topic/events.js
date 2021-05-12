@@ -201,13 +201,26 @@ define('forum/topic/events', [
 		var isDeleted = postEl.hasClass('deleted');
 		postTools.toggle(data.pid, isDeleted);
 
-		if (!ajaxify.data.privileges.isAdminOrMod && parseInt(data.uid, 10) !== parseInt(app.user.uid, 10)) {
+		var isAdminOrMod = ajaxify.data.privileges.isAdminOrMod;
+		var isAuthor = parseInt(data.uid, 10) === parseInt(app.user.uid, 10);
+		if (!isAdminOrMod && !isAuthor) {
 			postEl.find('[component="post/tools"]').toggleClass('hidden', isDeleted);
 			if (isDeleted) {
-				postEl.find('[component="post/content"]').translateHtml('[[topic:post_is_deleted]]');
+				postEl.find('[component="post/content"]').html('');
 			} else {
 				postEl.find('[component="post/content"]').html(translator.unescape(data.content));
 			}
+		} else if (isDeleted) {
+			postEl.find('[component="post/content"]').translateHtml(`
+<section class="spoiler-wrapper spoiler-wrapper--deleted">
+	<button class="spoiler-control btn btn-default">[[ariastel:show-deleted-content]]</button>
+	<section style="display: none;" class="spoiler-content">
+		${data.content}
+	</section>
+</section>
+`);
+		} else {
+			postEl.find('[component="post/content"]').html(translator.unescape(data.content));
 		}
 	}
 
