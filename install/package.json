@@ -38,7 +38,7 @@
         "@adactive/bootstrap-tagsinput": "0.8.2",
         "@ariastel/ariastel-theme-skins": "0.1.1",
         "@ariastel/nodebb-plugin-archive-deleted": "1.0.1",
-        "@ariastel/nodebb-plugin-category-combiner": "0.0.1",
+        "@ariastel/nodebb-plugin-category-combiner": "0.0.2",
         "@ariastel/nodebb-plugin-category-queue": "1.0.2",
         "@ariastel/nodebb-plugin-composer-default": "1.0.2",
         "@ariastel/nodebb-plugin-custom-homepage": "0.2.4",
