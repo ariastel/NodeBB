@@ -41,7 +41,7 @@ define('topicList', [
 		categoryFilter.init($('[component="category/dropdown"]'));
 
 		if (!config.usePagination) {
-			infinitescroll.init(TopicList.loadMoreTopics);
+			infinitescroll.init($('[component="category"]'), TopicList.loadMoreTopics);
 		}
 
 		handleBack.init(function (after, handleBackCallback) {
