@@ -5,6 +5,7 @@
   "@ariastel/nodebb-plugin-composer-default",
   "@ariastel/nodebb-plugin-custom-homepage",
   "@ariastel/nodebb-plugin-discord-notifier",
+  "@ariastel/nodebb-plugin-emoji",
   "@ariastel/nodebb-plugin-emoji-ariastel",
   "@ariastel/nodebb-plugin-filter-nsfw",
   "@ariastel/nodebb-plugin-lightgallery",
@@ -16,6 +17,7 @@
   "@ariastel/nodebb-plugin-s3-file-uploads",
   "@ariastel/nodebb-plugin-share-vk",
   "@ariastel/nodebb-plugin-signature-display",
+  "@ariastel/nodebb-plugin-simple-spoiler",
   "@ariastel/nodebb-plugin-sso-discord-alt",
   "@ariastel/nodebb-plugin-sso-google",
   "@ariastel/nodebb-plugin-sso-riot",
@@ -29,11 +31,9 @@
   "@ariastel/nodebb-widget-twitch",
   "nodebb-plugin-custom-pages",
   "nodebb-plugin-dbsearch",
-  "nodebb-plugin-emoji",
   "nodebb-plugin-google-analytics",
   "nodebb-plugin-markdown",
   "nodebb-plugin-mentions",
-  "nodebb-plugin-simple-spoiler",
   "nodebb-rewards-essentials",
   "nodebb-widget-essentials"
 ]
