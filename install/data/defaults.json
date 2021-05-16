@@ -193,6 +193,7 @@
     "followTopicsOnCreate": 1,
     "followTopicsOnReply": 1,
     "openOutgoingLinksInNewTab": 0,
+    "openOutgoingImageLinksInNewTab": 0,
     "password:disableEdit": 1,
     "restrictChat": 0,
     "showemail": 0,

@@ -79,6 +79,7 @@ apiController.loadConfig = async function (req) {
 		thumbs: {
 			size: meta.config.topicThumbSize,
 		},
+		openOutgoingImageLinksInNewTab: meta.config.openOutgoingImageLinksInNewTab === 1,
 	};
 
 	let settings = config;
