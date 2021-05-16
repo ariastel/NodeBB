@@ -42,6 +42,15 @@ module.exports = function (SocketPosts) {
 		if (!Array.isArray(pids)) {
 			throw new Error('[[error:invalid-data]]');
 		}
+
+		const [isAdmin = false, isMod = [false]] = await Promise.all([
+			privileges.users.isAdministrator(socket.uid),
+			posts.isModerator(pids, socket.uid),
+		]);
+		if (!isAdmin && !isMod[0]) {
+			return [];
+		}
+
 		const data = await posts.getUpvotedUidsByPids(pids);
 		if (!data.length) {
 			return [];
