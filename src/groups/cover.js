@@ -31,20 +31,20 @@ module.exports = function (Groups) {
 				tempPath = await image.writeImageDataToTempFile(data.imageData);
 			}
 
-			const filename = 'groupCover-' + data.groupName + path.extname(tempPath);
+			const filename = `groupCover-${data.groupName}${path.extname(tempPath)}`;
 			const uploadData = await image.uploadImage(filename, 'files', {
 				path: tempPath,
 				uid: uid,
 				name: 'groupCover',
 			});
-			const url = uploadData.url;
+			const { url } = uploadData;
 			await Groups.setGroupField(data.groupName, 'cover:url', url);
 
 			await image.resizeImage({
 				path: tempPath,
 				width: 358,
 			});
-			const thumbUploadData = await image.uploadImage('groupCoverThumb-' + data.groupName + path.extname(tempPath), 'files', {
+			const thumbUploadData = await image.uploadImage(`groupCoverThumb-${data.groupName}${path.extname(tempPath)}`, 'files', {
 				path: tempPath,
 				uid: uid,
 				name: 'groupCover',
@@ -62,6 +62,6 @@ module.exports = function (Groups) {
 	};
 
 	Groups.removeCover = async function (data) {
-		await db.deleteObjectFields('group:' + data.groupName, ['cover:url', 'cover:thumb:url', 'cover:position']);
+		await db.deleteObjectFields(`group:${data.groupName}`, ['cover:url', 'cover:thumb:url', 'cover:position']);
 	};
 };

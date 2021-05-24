@@ -35,6 +35,7 @@
 	"locked": "Locked",
 	"pinned": "Pinned",
 	"pinned-with-expiry": "Pinned until %1",
+	"scheduled": "Scheduled",
 	"moved": "Moved",
 	"moved-from": "Moved from %1",
 	"copy-ip": "Copy IP",
@@ -154,8 +155,10 @@
 	"composer.handle_placeholder": "Enter your name/handle here",
 	"composer.discard": "Discard",
 	"composer.submit": "Submit",
+	"composer.schedule": "Schedule",
 	"composer.replying_to": "Replying to %1",
 	"composer.new_topic": "New Topic",
+	"composer.editing": "Editing",
 
 	"composer.uploading": "uploading...",
 	"composer.thumb_url_label": "Paste a topic thumbnail URL",

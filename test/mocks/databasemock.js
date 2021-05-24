@@ -40,6 +40,11 @@ const relativePath = urlObject.pathname !== '/' ? urlObject.pathname : '';
 nconf.set('relative_path', relativePath);
 nconf.set('upload_path', path.join(nconf.get('base_dir'), nconf.get('upload_path')));
 nconf.set('upload_url', '/assets/uploads');
+nconf.set('url_parsed', urlObject);
+nconf.set('base_url', `${urlObject.protocol}//${urlObject.host}`);
+nconf.set('secure', urlObject.protocol === 'https:');
+nconf.set('use_port', !!urlObject.port);
+nconf.set('port', urlObject.port || nconf.get('port') || (nconf.get('PORT_ENV_VAR') ? nconf.get(nconf.get('PORT_ENV_VAR')) : false) || 4567);
 
 // cookies don't provide isolation by port: http://stackoverflow.com/a/16328399/122353
 const domain = nconf.get('cookieDomain') || urlObject.hostname;
@@ -108,9 +113,10 @@ if (testDbConfig.database === productionDbConfig.database &&
 nconf.set(dbType, testDbConfig);
 
 winston.info('database config %s', dbType, testDbConfig);
-winston.info('environment ' + global.env);
+winston.info(`environment ${global.env}`);
 
 const db = require('../../src/database');
+
 module.exports = db;
 
 before(async function () {
@@ -118,11 +124,6 @@ before(async function () {
 
 	// Parse out the relative_url and other goodies from the configured URL
 	const urlObject = url.parse(nconf.get('url'));
-	nconf.set('url_parsed', urlObject);
-	nconf.set('base_url', urlObject.protocol + '//' + urlObject.host);
-	nconf.set('secure', urlObject.protocol === 'https:');
-	nconf.set('use_port', !!urlObject.port);
-	nconf.set('port', urlObject.port || nconf.get('port') || (nconf.get('PORT_ENV_VAR') ? nconf.get(nconf.get('PORT_ENV_VAR')) : false) || 4567);
 
 	nconf.set('core_templates_path', path.join(__dirname, '../../src/views'));
 	nconf.set('base_templates_path', path.join(nconf.get('themes_path'), 'nodebb-theme-persona/templates'));
@@ -135,7 +136,9 @@ before(async function () {
 
 
 	await db.init();
-	await db.createIndices();
+	if (db.hasOwnProperty('createIndices')) {
+		await db.createIndices();
+	}
 	await setupMockDefaults();
 	await db.initSessionStore();
 
@@ -150,7 +153,7 @@ before(async function () {
 
 	const webserver = require('../../src/webserver');
 	const sockets = require('../../src/socket.io');
-	sockets.init(webserver.server);
+	await sockets.init(webserver.server);
 
 	require('../../src/notifications').startJobs();
 	require('../../src/user').startJobs();
@@ -158,9 +161,9 @@ before(async function () {
 	await webserver.listen();
 
 	// Iterate over all of the test suites/contexts
-	this.test.parent.suites.forEach(function (suite) {
+	this.test.parent.suites.forEach((suite) => {
 		// Attach an afterAll listener that resets the defaults
-		suite.afterAll(async function () {
+		suite.afterAll(async () => {
 			await setupMockDefaults();
 		});
 	});
@@ -173,6 +176,7 @@ async function setupMockDefaults() {
 	require('../../src/groups').cache.reset();
 	require('../../src/posts/cache').reset();
 	require('../../src/cache').reset();
+	require('../../src/middleware/uploads').clearCache();
 
 	winston.info('test_database flushed');
 	await setupDefaultConfigs(meta);

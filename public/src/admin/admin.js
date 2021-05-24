@@ -2,6 +2,7 @@
 
 (function () {
 	var logoutTimer = 0;
+	var logoutMessage;
 	function startLogoutTimer() {
 		if (app.config.adminReloginDuration <= 0) {
 			return;
@@ -10,11 +11,10 @@
 			clearTimeout(logoutTimer);
 		}
 		// pre-translate language string gh#9046
-		var translated;
-		if (!translated) {
+		if (!logoutMessage) {
 			require(['translator'], function (translator) {
-				translator.translate('[[login:logged-out-due-to-inactivity]]', function (_translated) {
-					translated = _translated;
+				translator.translate('[[login:logged-out-due-to-inactivity]]', function (translated) {
+					logoutMessage = translated;
 				});
 			});
 		}
@@ -22,7 +22,7 @@
 		logoutTimer = setTimeout(function () {
 			bootbox.alert({
 				closeButton: false,
-				message: translated,
+				message: logoutMessage,
 				callback: function () {
 					window.location.reload();
 				},
@@ -30,9 +30,11 @@
 		}, 3600000);
 	}
 
-	$(window).on('action:ajaxify.end', function () {
-		showCorrectNavTab();
-		startLogoutTimer();
+	require(['hooks'], (hooks) => {
+		hooks.on('action:ajaxify.end', () => {
+			showCorrectNavTab();
+			startLogoutTimer();
+		});
 	});
 
 	function showCorrectNavTab() {
@@ -66,12 +68,12 @@
 	});
 
 	function setupNProgress() {
-		require(['nprogress'], function (NProgress) {
+		require(['nprogress', 'hooks'], function (NProgress, hooks) {
 			$(window).on('action:ajaxify.start', function () {
 				NProgress.set(0.7);
 			});
 
-			$(window).on('action:ajaxify.end', function () {
+			hooks.on('action:ajaxify.end', function () {
 				NProgress.done();
 			});
 		});
@@ -107,10 +109,7 @@
 
 			var mainTitle;
 			var pageTitle;
-			if (/admin\/general\/dashboard$/.test(url)) {
-				pageTitle = '[[admin/menu:general/dashboard]]';
-				mainTitle = pageTitle;
-			} else if (/admin\/plugins\//.test(url)) {
+			if (/admin\/plugins\//.test(url)) {
 				mainTitle = fallback;
 				pageTitle = '[[admin/menu:section-plugins]] > ' + mainTitle;
 			} else {
@@ -124,8 +123,8 @@
 						mainTitle = translator.compile('admin/menu:settings.page-title', mainTitle);
 					}
 				} else {
-					mainTitle = '[[admin/menu:dashboard]]';
-					pageTitle = '[[admin/menu:dashboard]]';
+					mainTitle = '[[admin/menu:section-dashboard]]';
+					pageTitle = '[[admin/menu:section-dashboard]]';
 				}
 			}
 

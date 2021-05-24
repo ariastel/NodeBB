@@ -10,11 +10,12 @@ const social = require('../../social');
 
 const helpers = require('../helpers');
 const translator = require('../../../public/src/modules/translator');
+
 const settingsController = module.exports;
 
 settingsController.get = async function (req, res) {
 	const term = req.params.term || 'general';
-	res.render('admin/settings/' + term);
+	res.render(`admin/settings/${term}`);
 };
 
 settingsController.email = async (req, res) => {
@@ -29,12 +30,10 @@ settingsController.email = async (req, res) => {
 
 settingsController.user = async (req, res) => {
 	const notificationTypes = await notifications.getAllNotificationTypes();
-	const notificationSettings = notificationTypes.map(function (type) {
-		return {
-			name: type,
-			label: '[[notifications:' + type + ']]',
-		};
-	});
+	const notificationSettings = notificationTypes.map(type => ({
+		name: type,
+		label: `[[notifications:${type}]]`,
+	}));
 	res.render('admin/settings/user', {
 		notificationSettings: notificationSettings,
 	});
@@ -49,7 +48,7 @@ settingsController.post = async (req, res) => {
 
 settingsController.languages = async function (req, res) {
 	const languageData = await languages.list();
-	languageData.forEach(function (language) {
+	languageData.forEach((language) => {
 		language.selected = language.code === meta.config.defaultLang;
 	});
 
@@ -68,20 +67,18 @@ settingsController.navigation = async function (req, res) {
 	allGroups.sort((a, b) => b.system - a.system);
 
 	admin.groups = allGroups.map(group => ({ name: group.name, displayName: group.displayName }));
-	admin.enabled.forEach(function (enabled, index) {
+	admin.enabled.forEach((enabled, index) => {
 		enabled.index = index;
 		enabled.selected = index === 0;
 		enabled.title = translator.escape(enabled.title);
 		enabled.text = translator.escape(enabled.text);
-		enabled.groups = admin.groups.map(function (group) {
-			return {
-				displayName: group.displayName,
-				selected: enabled.groups.includes(group.name),
-			};
-		});
+		enabled.groups = admin.groups.map(group => ({
+			displayName: group.displayName,
+			selected: enabled.groups.includes(group.name),
+		}));
 	});
 
-	admin.available.forEach(function (available) {
+	admin.available.forEach((available) => {
 		available.groups = admin.groups;
 	});
 

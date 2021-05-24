@@ -1,7 +1,6 @@
 'use strict';
 
 const user = require('../user');
-const categories = require('../categories');
 const db = require('../database');
 const plugins = require('../plugins');
 const slugify = require('../slugify');
@@ -23,6 +22,7 @@ require('./join')(Groups);
 require('./leave')(Groups);
 require('./cache')(Groups);
 
+Groups.BANNED_USERS = 'banned-users';
 
 Groups.ephemeralGroups = ['guests', 'spiders'];
 
@@ -30,6 +30,7 @@ Groups.systemGroups = [
 	'registered-users',
 	'verified-users',
 	'unverified-users',
+	Groups.BANNED_USERS,
 	'administrators',
 	'Global Moderators',
 ];
@@ -45,7 +46,7 @@ Groups.getEphemeralGroup = function (groupName) {
 };
 
 Groups.removeEphemeralGroups = function (groups) {
-	for (var x = groups.length; x >= 0; x -= 1) {
+	for (let x = groups.length; x >= 0; x -= 1) {
 		if (Groups.ephemeralGroups.includes(groups[x])) {
 			groups.splice(x, 1);
 		}
@@ -54,7 +55,7 @@ Groups.removeEphemeralGroups = function (groups) {
 	return groups;
 };
 
-var isPrivilegeGroupRegex = /^cid:\d+:privileges:[\w\-:]+$/;
+const isPrivilegeGroupRegex = /^cid:\d+:privileges:[\w\-:]+$/;
 Groups.isPrivilegeGroup = function (groupName) {
 	return isPrivilegeGroupRegex.test(groupName);
 };
@@ -99,7 +100,7 @@ Groups.getGroupsAndMembers = async function (groupNames) {
 		Groups.getGroupsData(groupNames),
 		Groups.getMemberUsers(groupNames, 0, 3),
 	]);
-	groups.forEach(function (group, index) {
+	groups.forEach((group, index) => {
 		if (group) {
 			group.members = members[index] || [];
 			group.truncated = group.memberCount > group.members.length;
@@ -119,12 +120,11 @@ Groups.get = async function (groupName, options) {
 		stop = (parseInt(options.userListCount, 10) || 4) - 1;
 	}
 
-	const [groupData, members, selectCategories, pending, invited, isMember, isPending, isInvited, isOwner] = await Promise.all([
+	const [groupData, members, pending, invited, isMember, isPending, isInvited, isOwner] = await Promise.all([
 		Groups.getGroupData(groupName),
 		Groups.getOwnersAndMembers(groupName, options.uid, 0, stop),
-		categories.buildForSelect(groupName, 'topics:read', []),
-		Groups.getUsersFromSet('group:' + groupName + ':pending', ['username', 'userslug', 'picture']),
-		Groups.getUsersFromSet('group:' + groupName + ':invited', ['username', 'userslug', 'picture']),
+		Groups.getUsersFromSet(`group:${groupName}:pending`, ['username', 'userslug', 'picture']),
+		Groups.getUsersFromSet(`group:${groupName}:invited`, ['username', 'userslug', 'picture']),
 		Groups.isMember(options.uid, groupName),
 		Groups.isPending(options.uid, groupName),
 		Groups.isInvited(options.uid, groupName),
@@ -134,12 +134,8 @@ Groups.get = async function (groupName, options) {
 	if (!groupData) {
 		return null;
 	}
-	const descriptionParsed = await plugins.hooks.fire('filter:parse.raw', groupData.description);
+	const descriptionParsed = await plugins.hooks.fire('filter:parse.raw', String(groupData.description || ''));
 	groupData.descriptionParsed = descriptionParsed;
-	groupData.categories = selectCategories.map((category) => {
-		category.selected = groupData.memberPostCids.includes(category.cid);
-		return category;
-	});
 	groupData.members = members;
 	groupData.membersNextStart = stop + 1;
 	groupData.pending = pending.filter(Boolean);
@@ -153,15 +149,15 @@ Groups.get = async function (groupName, options) {
 };
 
 Groups.getOwners = async function (groupName) {
-	return await db.getSetMembers('group:' + groupName + ':owners');
+	return await db.getSetMembers(`group:${groupName}:owners`);
 };
 
 Groups.getOwnersAndMembers = async function (groupName, uid, start, stop) {
-	const ownerUids = await db.getSetMembers('group:' + groupName + ':owners');
+	const ownerUids = await db.getSetMembers(`group:${groupName}:owners`);
 	const countToReturn = stop - start + 1;
 	const ownerUidsOnPage = ownerUids.slice(start, stop !== -1 ? stop + 1 : undefined);
 	const owners = await user.getUsers(ownerUidsOnPage, uid);
-	owners.forEach(function (user) {
+	owners.forEach((user) => {
 		if (user) {
 			user.isOwner = true;
 		}
@@ -174,7 +170,7 @@ Groups.getOwnersAndMembers = async function (groupName, uid, start, stop) {
 	memberStart = Math.max(0, memberStart);
 	memberStop = Math.max(0, memberStop);
 	async function addMembers(start, stop) {
-		let batch = await user.getUsersFromSet('group:' + groupName + ':members', uid, start, stop);
+		let batch = await user.getUsersFromSet(`group:${groupName}:members`, uid, start, stop);
 		if (!batch.length) {
 			done = true;
 		}
@@ -224,7 +220,7 @@ Groups.isHidden = async function (groupName) {
 };
 
 async function isFieldOn(groupName, field) {
-	const value = await db.getObjectField('group:' + groupName, field);
+	const value = await db.getObjectField(`group:${groupName}`, field);
 	return parseInt(value, 10) === 1;
 }
 

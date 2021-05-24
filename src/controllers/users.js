@@ -37,7 +37,7 @@ usersController.search = async function (req, res) {
 	const section = req.query.section || 'joindate';
 
 	searchData.pagination = pagination.create(req.query.page, searchData.pageCount, req.query);
-	searchData['section_' + section] = true;
+	searchData[`section_${section}`] = true;
 	searchData.displayUserSearch = true;
 	await render(req, res, searchData);
 };
@@ -50,7 +50,7 @@ usersController.getOnlineUsers = async function (req, res) {
 
 	let hiddenCount = 0;
 	if (!userData.isAdminOrGlobalMod) {
-		userData.users = userData.users.filter(function (user) {
+		userData.users = userData.users.filter((user) => {
 			if (user && user.status === 'offline') {
 				hiddenCount += 1;
 			}
@@ -141,7 +141,7 @@ usersController.getUsers = async function (set, uid, query) {
 		isAdmin: isAdmin,
 		isGlobalMod: isGlobalMod,
 		displayUserSearch: canSearch,
-		['section_' + (query.section || 'joindate')]: true,
+		[`section_${query.section || 'joindate'}`]: true,
 	};
 };
 
@@ -165,7 +165,7 @@ usersController.getUsersAndCount = async function (set, uid, start, stop) {
 };
 
 async function render(req, res, data) {
-	const registrationType = meta.config.registrationType;
+	const { registrationType } = meta.config;
 
 	data.maximumInvites = meta.config.maximumInvites;
 	data.inviteOnly = registrationType === 'invite-only' || registrationType === 'admin-invite-only';

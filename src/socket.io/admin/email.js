@@ -10,6 +10,7 @@ const Email = module.exports;
 
 Email.test = async function (socket, data) {
 	const payload = {
+		...(data.payload || {}),
 		subject: '[[email:test-email.subject]]',
 	};
 
@@ -41,7 +42,7 @@ Email.test = async function (socket, data) {
 				type: 'test',
 				bodyShort: '[[email:notif.test.short]]',
 				bodyLong: '[[email:notif.test.long]]',
-				nid: 'uid:' + socket.uid + ':test',
+				nid: `uid:${socket.uid}:test`,
 				path: '/',
 				from: socket.uid,
 			});
@@ -53,7 +54,8 @@ Email.test = async function (socket, data) {
 				notification,
 				showUnsubscribe: true,
 			});
-		} break;
+			break;
+		}
 
 		default:
 			await emailer.send(data.template, socket.uid, payload);

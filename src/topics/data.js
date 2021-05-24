@@ -1,11 +1,11 @@
 'use strict';
 
-var validator = require('validator');
+const validator = require('validator');
 
-var db = require('../database');
-var categories = require('../categories');
-var utils = require('../utils');
-var translator = require('../translator');
+const db = require('../database');
+const categories = require('../categories');
+const utils = require('../utils');
+const translator = require('../translator');
 const plugins = require('../plugins');
 
 const intFields = [
@@ -20,8 +20,14 @@ module.exports = function (Topics) {
 		if (!Array.isArray(tids) || !tids.length) {
 			return [];
 		}
-		const keys = tids.map(tid => 'topic:' + tid);
-		const topics = await (fields.length ? db.getObjectsFields(keys, fields) : db.getObjects(keys));
+
+		// "scheduled" is derived from "timestamp"
+		if (fields.includes('scheduled') && !fields.includes('timestamp')) {
+			fields.push('timestamp');
+		}
+
+		const keys = tids.map(tid => `topic:${tid}`);
+		const topics = await db.getObjects(keys, fields);
 		const result = await plugins.hooks.fire('filter:topic.getFields', {
 			tids: tids,
 			topics: topics,
@@ -57,19 +63,19 @@ module.exports = function (Topics) {
 	};
 
 	Topics.setTopicField = async function (tid, field, value) {
-		await db.setObjectField('topic:' + tid, field, value);
+		await db.setObjectField(`topic:${tid}`, field, value);
 	};
 
 	Topics.setTopicFields = async function (tid, data) {
-		await db.setObject('topic:' + tid, data);
+		await db.setObject(`topic:${tid}`, data);
 	};
 
 	Topics.deleteTopicField = async function (tid, field) {
-		await db.deleteObjectField('topic:' + tid, field);
+		await db.deleteObjectField(`topic:${tid}`, field);
 	};
 
 	Topics.deleteTopicFields = async function (tid, fields) {
-		await db.deleteObjectFields('topic:' + tid, fields);
+		await db.deleteObjectFields(`topic:${tid}`, fields);
 	};
 };
 
@@ -98,13 +104,11 @@ function modifyTopic(topic, fields) {
 
 	escapeTitle(topic);
 
-	// TODO: Remove in v1.17.0
-	if (topic.hasOwnProperty('thumb')) {
-		topic.thumb = validator.escape(String(topic.thumb));
-	}
-
 	if (topic.hasOwnProperty('timestamp')) {
 		topic.timestampISO = utils.toISOString(topic.timestamp);
+		if (!fields.length || fields.includes('scheduled')) {
+			topic.scheduled = topic.timestamp > Date.now();
+		}
 	}
 
 	if (topic.hasOwnProperty('lastposttime')) {

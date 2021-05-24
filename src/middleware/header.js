@@ -29,16 +29,16 @@ const middleware = module.exports;
 
 const relative_path = nconf.get('relative_path');
 
-middleware.buildHeader = helpers.try(async function buildHeader(req, res, next) {
+middleware.buildHeader = helpers.try(async (req, res, next) => {
 	res.locals.renderHeader = true;
 	res.locals.isAPI = false;
-	const [config, isBanned] = await Promise.all([
+	const [config, canLoginIfBanned] = await Promise.all([
 		controllers.api.loadConfig(req),
-		user.bans.isBanned(req.uid),
+		user.bans.canLoginIfBanned(req.uid),
 		plugins.hooks.fire('filter:middleware.buildHeader', { req: req, locals: res.locals }),
 	]);
 
-	if (isBanned) {
+	if (!canLoginIfBanned && req.loggedIn) {
 		req.logout();
 		return res.redirect('/');
 	}
@@ -75,7 +75,7 @@ middleware.renderHeader = async function renderHeader(req, res, data) {
 		isModerator: user.isModeratorOfAnyCategory(req.uid),
 		privileges: privileges.global.get(req.uid),
 		user: user.getUserData(req.uid),
-		isEmailConfirmSent: (!meta.config.requireEmailConfirmation || req.uid <= 0) ? false : await db.get('uid:' + req.uid + ':confirm:email:sent'),
+		isEmailConfirmSent: (!meta.config.requireEmailConfirmation || req.uid <= 0) ? false : await db.get(`uid:${req.uid}:confirm:email:sent`),
 		languageDirection: translator.translate('[[language:dir]]', res.locals.config.userLang),
 		timeagoCode: languages.userTimeagoCode(res.locals.config.userLang),
 		browserTitle: translator.translate(controllers.helpers.buildTitle(translator.unescape(data.title))),
@@ -184,14 +184,14 @@ async function appendUnreadCounts({ uid, navigation, unreadData }) {
 		flags: results.unreadFlagCount || 0,
 	};
 
-	Object.keys(unreadCount).forEach(function (key) {
+	Object.keys(unreadCount).forEach((key) => {
 		if (unreadCount[key] > 99) {
 			unreadCount[key] = '99+';
 		}
 	});
 
-	const tidsByFilter = results.unreadData.tidsByFilter;
-	navigation = navigation.map(function (item) {
+	const { tidsByFilter } = results.unreadData;
+	navigation = navigation.map((item) => {
 		function modifyNavItem(item, route, filter, content) {
 			if (item && item.originalRoute === route) {
 				unreadData[filter] = _.zipObject(tidsByFilter[filter], tidsByFilter[filter].map(() => true));
@@ -228,9 +228,7 @@ middleware.renderFooter = async function renderFooter(req, res, templateValues) 
 
 	const scripts = await plugins.hooks.fire('filter:scripts.get', []);
 
-	data.templateValues.scripts = scripts.map(function (script) {
-		return { src: script };
-	});
+	data.templateValues.scripts = scripts.map(script => ({ src: script }));
 
 	data.templateValues.useCustomJS = meta.config.useCustomJS;
 	data.templateValues.customJS = data.templateValues.useCustomJS ? meta.config.customJS : '';
@@ -244,7 +242,7 @@ function modifyTitle(obj) {
 	obj.browserTitle = title;
 
 	if (obj.metaTags) {
-		obj.metaTags.forEach(function (tag, i) {
+		obj.metaTags.forEach((tag, i) => {
 			if (tag.property === 'og:title') {
 				obj.metaTags[i].content = title;
 			}

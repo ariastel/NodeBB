@@ -82,6 +82,10 @@ paths:
     $ref: 'write/categories.yaml'
   /categories/{cid}:
     $ref: 'write/categories/cid.yaml'
+  /categories/{cid}/privileges:
+    $ref: 'write/categories/cid/privileges.yaml'
+  /categories/{cid}/privileges/{privilege}:
+    $ref: 'write/categories/cid/privileges/privilege.yaml'
   /topics/:
     $ref: 'write/topics.yaml'
   /topics/{tid}:
@@ -100,6 +104,10 @@ paths:
     $ref: 'write/topics/tid/tags.yaml'
   /topics/{tid}/thumbs:
     $ref: 'write/topics/tid/thumbs.yaml'
+  /topics/{tid}/thumbs/order:
+    $ref: 'write/topics/tid/thumbs/order.yaml'
+  /topics/{tid}/events:
+    $ref: 'write/topics/tid/events.yaml'
   /posts/{pid}:
     $ref: 'write/posts/pid.yaml'
   /posts/{pid}/state:
@@ -114,7 +122,11 @@ paths:
     $ref: 'write/posts/pid/diffs.yaml'
   /posts/{pid}/diffs/{since}:
     $ref: 'write/posts/pid/diffs/since.yaml'
+  /posts/{pid}/diffs/{timestamp}:
+    $ref: 'write/posts/pid/diffs/timestamp.yaml'
   /admin/settings/{setting}:
     $ref: 'write/admin/settings/setting.yaml'
+  /admin/analytics/{set}:
+    $ref: 'write/admin/analytics/set.yaml'
   /files/:
     $ref: 'write/files.yaml'

@@ -13,7 +13,7 @@ function setupWinston() {
 		return;
 	}
 
-	var formats = [];
+	const formats = [];
 	if (nconf.get('log-colorize') !== 'false') {
 		formats.push(winston.format.colorize());
 	}
@@ -23,8 +23,8 @@ function setupWinston() {
 		formats.push(winston.format.json());
 	} else {
 		const timestampFormat = winston.format((info) => {
-			var dateString = new Date().toISOString() + ' [' + nconf.get('port') + '/' + global.process.pid + ']';
-			info.level = dateString + ' - ' + info.level;
+			const dateString = `${new Date().toISOString()} [${nconf.get('port')}/${global.process.pid}]`;
+			info.level = `${dateString} - ${info.level}`;
 			return info;
 		});
 		formats.push(timestampFormat());
@@ -60,10 +60,10 @@ function loadConfig(configFile) {
 	});
 
 	// Explicitly cast as Bool, loader.js passes in isCluster as string 'true'/'false'
-	var castAsBool = ['isCluster', 'isPrimary', 'jobsDisabled'];
+	const castAsBool = ['isCluster', 'isPrimary', 'jobsDisabled'];
 	nconf.stores.env.readOnly = false;
-	castAsBool.forEach(function (prop) {
-		var value = nconf.get(prop);
+	castAsBool.forEach((prop) => {
+		const value = nconf.get(prop);
 		if (value !== undefined) {
 			nconf.set(prop, typeof value === 'boolean' ? value : String(value).toLowerCase() === 'true');
 		}
@@ -90,7 +90,7 @@ function loadConfig(configFile) {
 		// Parse out the relative_url and other goodies from the configured URL
 		const urlObject = url.parse(nconf.get('url'));
 		const relativePath = urlObject.pathname !== '/' ? urlObject.pathname.replace(/\/+$/, '') : '';
-		nconf.set('base_url', urlObject.protocol + '//' + urlObject.host);
+		nconf.set('base_url', `${urlObject.protocol}//${urlObject.host}`);
 		nconf.set('secure', urlObject.protocol === 'https:');
 		nconf.set('use_port', !!urlObject.port);
 		nconf.set('relative_path', relativePath);
@@ -104,14 +104,14 @@ function loadConfig(configFile) {
 }
 
 function versionCheck() {
-	var version = process.version.slice(1);
-	var range = pkg.engines.node;
-	var semver = require('semver');
-	var compatible = semver.satisfies(version, range);
+	const version = process.version.slice(1);
+	const range = pkg.engines.node;
+	const semver = require('semver');
+	const compatible = semver.satisfies(version, range);
 
 	if (!compatible) {
 		winston.warn('Your version of Node.js is too outdated for NodeBB. Please update your version of Node.js.');
-		winston.warn('Recommended ' + range.green + ', '.reset + version.yellow + ' provided\n'.reset);
+		winston.warn(`Recommended ${range.green}${', '.reset}${version.yellow}${' provided\n'.reset}`);
 	}
 }
 

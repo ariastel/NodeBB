@@ -2,7 +2,6 @@
 
 const validator = require('validator');
 const nconf = require('nconf');
-const winston = require('winston');
 
 const meta = require('../meta');
 const user = require('../user');
@@ -10,7 +9,6 @@ const categories = require('../categories');
 const plugins = require('../plugins');
 const translator = require('../translator');
 const languages = require('../languages');
-const api = require('../api');
 
 const apiController = module.exports;
 
@@ -29,6 +27,7 @@ apiController.loadConfig = async function (req) {
 		browserTitle: validator.escape(String(meta.config.browserTitle || meta.config.title || 'NodeBB')),
 		titleLayout: (meta.config.titleLayout || '{pageTitle} | {browserTitle}').replace(/{/g, '&#123;').replace(/}/g, '&#125;'),
 		showSiteTitle: meta.config.showSiteTitle === 1,
+		maintenanceMode: meta.config.maintenanceMode === 1,
 		minimumTitleLength: meta.config.minimumTitleLength,
 		maximumTitleLength: meta.config.maximumTitleLength,
 		minimumPostLength: meta.config.minimumPostLength,
@@ -80,6 +79,7 @@ apiController.loadConfig = async function (req) {
 			size: meta.config.topicThumbSize,
 		},
 		openOutgoingImageLinksInNewTab: meta.config.openOutgoingImageLinksInNewTab === 1,
+		iconBackgrounds: await user.getIconBackgrounds(req.uid),
 	};
 
 	let settings = config;
@@ -98,7 +98,9 @@ apiController.loadConfig = async function (req) {
 	config.usePagination = settings.usePagination;
 	config.topicsPerPage = settings.topicsPerPage;
 	config.postsPerPage = settings.postsPerPage;
-	config.userLang = validator.escape(String((req.query.lang ? req.query.lang : null) || settings.userLang || config.defaultLang));
+	config.userLang = validator.escape(
+		String((req.query.lang ? req.query.lang : null) || settings.userLang || config.defaultLang)
+	);
 	config.acpLang = validator.escape(String((req.query.lang ? req.query.lang : null) || settings.acpLang));
 	config.openOutgoingLinksInNewTab = settings.openOutgoingLinksInNewTab;
 	config.topicPostSort = settings.topicPostSort || config.topicPostSort;
@@ -115,36 +117,6 @@ apiController.loadConfig = async function (req) {
 apiController.getConfig = async function (req, res) {
 	const config = await apiController.loadConfig(req);
 	res.json(config);
-};
-
-// TODO: Deprecate these four controllers in 1.17.0
-apiController.getPostData = async (pid, uid) => api.posts.get({ uid }, { pid });
-apiController.getTopicData = async (tid, uid) => api.topics.get({ uid }, { tid });
-apiController.getCategoryData = async (cid, uid) => api.categories.get({ uid }, { cid });
-apiController.getObject = async function (req, res, next) {
-	const methods = {
-		post: apiController.getPostData,
-		topic: apiController.getTopicData,
-		category: apiController.getCategoryData,
-	};
-	const method = methods[req.params.type];
-	if (!method) {
-		return next();
-	}
-
-	winston.warn('[api] This route has been deprecated and will likely be removed in v1.17.0');
-	winston.warn('[api] Use GET /api/v3/(posts|topics|categories)/:id instead');
-
-	try {
-		const result = await method(req.params.id, req.uid);
-		if (!result) {
-			return next();
-		}
-
-		res.json(result);
-	} catch (err) {
-		next(err);
-	}
 };
 
 apiController.getModerators = async function (req, res) {

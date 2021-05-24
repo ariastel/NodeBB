@@ -1,11 +1,11 @@
 'use strict';
 
-define('topicThumbs', ['api', 'bootbox', 'uploader', 'benchpress', 'translator'], function (api, bootbox, uploader, Benchpress, translator) {
+define('topicThumbs', ['api', 'bootbox', 'uploader', 'benchpress', 'translator', 'jquery-ui/widgets/sortable'], function (api, bootbox, uploader, Benchpress, translator) {
 	const Thumbs = {};
 
 	Thumbs.get = id => api.get(`/topics/${id}/thumbs`, {});
 
-	Thumbs.getByPid = pid => fetch(`${config.relative_path}/api/post/pid/${pid}`).then(res => res.json()).then(res => Thumbs.get(res.tid));
+	Thumbs.getByPid = pid => api.get(`/posts/${pid}`, {}).then(post => Thumbs.get(post.tid));
 
 	Thumbs.delete = (id, path) => api.del(`/topics/${id}/thumbs`, {
 		path: path,
@@ -32,17 +32,22 @@ define('topicThumbs', ['api', 'bootbox', 'uploader', 'benchpress', 'translator']
 	Thumbs.modal.open = function (payload) {
 		const { id, pid } = payload;
 		let { modal } = payload;
+		let numThumbs;
 
 		return new Promise((resolve) => {
 			Promise.all([
 				Thumbs.get(id),
 				pid ? Thumbs.getByPid(pid) : [],
 			]).then(results => new Promise((resolve) => {
-				resolve(results.reduce((memo, cur) => memo.concat(cur)));
+				const thumbs = results.reduce((memo, cur) => memo.concat(cur));
+				numThumbs = thumbs.length;
+
+				resolve(thumbs);
 			})).then(thumbs => Benchpress.render('modals/topic-thumbs', { thumbs })).then((html) => {
 				if (modal) {
 					translator.translate(html, function (translated) {
 						modal.find('.bootbox-body').html(translated);
+						Thumbs.modal.handleSort({ modal, numThumbs });
 					});
 				} else {
 					modal = bootbox.dialog({
@@ -51,18 +56,26 @@ define('topicThumbs', ['api', 'bootbox', 'uploader', 'benchpress', 'translator']
 						buttons: {
 							add: {
 								label: '<i class="fa fa-plus"></i> [[modules:thumbs.modal.add]]',
-								className: 'btn-primary',
+								className: 'btn-success',
 								callback: () => {
 									Thumbs.upload(id).then(() => {
 										Thumbs.modal.open({ ...payload, modal });
-										resolve();
+										require(['composer'], (composer) => {
+											composer.updateThumbCount(id, $(`[component="composer"][data-uuid="${id}"]`));
+											resolve();
+										});
 									});
 									return false;
 								},
 							},
+							close: {
+								label: '[[global:close]]',
+								className: 'btn-primary',
+							},
 						},
 					});
 					Thumbs.modal.handleDelete({ ...payload, modal });
+					Thumbs.modal.handleSort({ modal, numThumbs });
 				}
 			});
 		});
@@ -87,6 +100,27 @@ define('topicThumbs', ['api', 'bootbox', 'uploader', 'benchpress', 'translator']
 					}).catch(app.alertError);
 				});
 			}
+		});
+	};
+
+	Thumbs.modal.handleSort = ({ modal, numThumbs }) => {
+		if (numThumbs > 1) {
+			const selectorEl = modal.find('.topic-thumbs-modal');
+			selectorEl.sortable({
+				items: '[data-id]',
+			});
+			selectorEl.on('sortupdate', Thumbs.modal.handleSortChange);
+		}
+	};
+
+	Thumbs.modal.handleSortChange = (ev, ui) => {
+		const items = ui.item.get(0).parentNode.querySelectorAll('[data-id]');
+		Array.from(items).forEach((el, order) => {
+			const id = el.getAttribute('data-id');
+			let path = el.getAttribute('data-path');
+			path = path.replace(new RegExp(`^${config.upload_url}`), '');
+
+			api.put(`/topics/${id}/thumbs/order`, { path, order }).catch(app.alertError);
 		});
 	};
 

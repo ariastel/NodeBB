@@ -2,7 +2,9 @@
 
 
 define('forum/login', ['jquery-form'], function () {
-	var	Login = {};
+	var	Login = {
+		_capsState: false,
+	};
 
 	Login.init = function () {
 		var errorEl = $('#login-error-notify');
@@ -59,6 +61,9 @@ define('forum/login', ['jquery-form'], function () {
 			}
 		});
 
+		// Guard against caps lock
+		Login.capsLockCheck(document.querySelector('#password'), document.querySelector('#caps-lock-warning'));
+
 		$('#login-error-notify button').on('click', function (e) {
 			e.preventDefault();
 			errorEl.hide();
@@ -71,6 +76,29 @@ define('forum/login', ['jquery-form'], function () {
 			$('#content #username').focus();
 		}
 		$('#content #noscript').val('false');
+	};
+
+	Login.capsLockCheck = (inputEl, warningEl) => {
+		const toggle = (state) => {
+			warningEl.classList[state ? 'remove' : 'add']('hidden');
+			warningEl.parentNode.classList[state ? 'add' : 'remove']('has-warning');
+		};
+		if (!inputEl) {
+			return;
+		}
+		inputEl.addEventListener('keyup', function (e) {
+			if (Login._capsState && e.key === 'CapsLock') {
+				toggle(false);
+				Login._capsState = !Login._capsState;
+				return;
+			}
+			Login._capsState = e.getModifierState && e.getModifierState('CapsLock');
+			toggle(Login._capsState);
+		});
+
+		if (Login._capsState) {
+			toggle(true);
+		}
 	};
 
 	return Login;

@@ -35,14 +35,6 @@ get:
                               nullable: true
                             titleRaw:
                               type: string
-                            thumbs:
-                              type: array
-                              items:
-                                type: object
-                                properties:
-                                  url:
-                                    type: string
-                                    description: Relative path to the topic thumbnail
                             category:
                               type: object
                               properties:
@@ -200,32 +192,6 @@ get:
                     type: string
                   pageCount:
                     type: number
-                  categories:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        cid:
-                          type: number
-                          description: A category identifier
-                        name:
-                          type: string
-                        level:
-                          type: string
-                        icon:
-                          type: string
-                        parentCid:
-                          type: number
-                          description: The category identifier for the category that is the immediate
-                            ancestor of the current category
-                        color:
-                          type: string
-                        bgColor:
-                          type: string
-                        selected:
-                          type: boolean
-                        imageClass:
-                          type: string
                   allCategoriesUrl:
                     type: string
                   selectedCategory:
@@ -238,6 +204,8 @@ get:
                       bgColor:
                         type: string
                     nullable: true
+                  selectCategoryLabel:
+                    type: string
                   selectedCids:
                     type: array
                     items:

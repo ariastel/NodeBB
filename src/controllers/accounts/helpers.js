@@ -28,15 +28,18 @@ helpers.getUserDataByUserSlug = async function (userslug, callerUID) {
 	}
 	await parseAboutMe(results.userData);
 
-	const userData = results.userData;
-	const userSettings = results.userSettings;
-	const isAdmin = results.isAdmin;
-	const isGlobalModerator = results.isGlobalModerator;
-	const isModerator = results.isModerator;
-	const canViewInfo = results.canViewInfo;
+	const { userData } = results;
+	const { userSettings } = results;
+	const { isAdmin } = results;
+	const { isGlobalModerator } = results;
+	const { isModerator } = results;
+	const { canViewInfo } = results;
 	const isSelf = parseInt(callerUID, 10) === parseInt(userData.uid, 10);
 
-	userData.age = Math.max(0, userData.birthday ? Math.floor((new Date().getTime() - new Date(userData.birthday).getTime()) / 31536000000) : 0);
+	userData.age = Math.max(
+		0,
+		userData.birthday ? Math.floor((new Date().getTime() - new Date(userData.birthday).getTime()) / 31536000000) : 0
+	);
 
 	userData.emailClass = 'hide';
 
@@ -95,9 +98,9 @@ helpers.getUserDataByUserSlug = async function (userslug, callerUID) {
 	});
 
 	userData.sso = results.sso.associations;
-	userData.banned = userData.banned === 1;
+	userData.banned = Boolean(userData.banned);
 	userData.website = validator.escape(String(userData.website || ''));
-	userData.websiteLink = !userData.website.startsWith('http') ? 'http://' + userData.website : userData.website;
+	userData.websiteLink = !userData.website.startsWith('http') ? `http://${userData.website}` : userData.website;
 	userData.websiteName = userData.website.replace(validator.escape('http://'), '').replace(validator.escape('https://'), '');
 
 	userData.fullname = validator.escape(String(userData.fullname || ''));
@@ -144,20 +147,20 @@ async function getAllData(uid, callerUID) {
 }
 
 async function getCounts(userData, callerUID) {
-	const uid = userData.uid;
+	const { uid } = userData;
 	const cids = await categories.getCidsByPrivilege('categories:cid', callerUID, 'topics:read');
 	const promises = {
-		posts: db.sortedSetsCardSum(cids.map(c => 'cid:' + c + ':uid:' + uid + ':pids')),
-		best: db.sortedSetsCardSum(cids.map(c => 'cid:' + c + ':uid:' + uid + ':pids:votes')),
-		topics: db.sortedSetsCardSum(cids.map(c => 'cid:' + c + ':uid:' + uid + ':tids')),
+		posts: db.sortedSetsCardSum(cids.map(c => `cid:${c}:uid:${uid}:pids`)),
+		best: db.sortedSetsCardSum(cids.map(c => `cid:${c}:uid:${uid}:pids:votes`)),
+		topics: db.sortedSetsCardSum(cids.map(c => `cid:${c}:uid:${uid}:tids`)),
 	};
 	if (userData.isAdmin || userData.isSelf) {
-		promises.ignored = db.sortedSetCard('uid:' + uid + ':ignored_tids');
-		promises.watched = db.sortedSetCard('uid:' + uid + ':followed_tids');
-		promises.upvoted = db.sortedSetCard('uid:' + uid + ':upvote');
-		promises.downvoted = db.sortedSetCard('uid:' + uid + ':downvote');
-		promises.bookmarks = db.sortedSetCard('uid:' + uid + ':bookmarks');
-		promises.uploaded = db.sortedSetCard('uid:' + uid + ':uploads');
+		promises.ignored = db.sortedSetCard(`uid:${uid}:ignored_tids`);
+		promises.watched = db.sortedSetCard(`uid:${uid}:followed_tids`);
+		promises.upvoted = db.sortedSetCard(`uid:${uid}:upvote`);
+		promises.downvoted = db.sortedSetCard(`uid:${uid}:downvote`);
+		promises.bookmarks = db.sortedSetCard(`uid:${uid}:bookmarks`);
+		promises.uploaded = db.sortedSetCard(`uid:${uid}:uploads`);
 		promises.categoriesWatched = user.getWatchedCategories(uid);
 		promises.blocks = user.getUserField(userData.uid, 'blocksCount');
 	}
@@ -235,19 +238,19 @@ async function parseAboutMe(userData) {
 }
 
 function filterLinks(links, states) {
-	return links.filter(function (link, index) {
+	return links.filter((link, index) => {
 		// Default visibility
-		link.visibility = { self: true,
+		link.visibility = {
+			self: true,
 			other: true,
 			moderator: true,
 			globalMod: true,
 			admin: true,
 			canViewInfo: true,
-			...link.visibility };
+			...link.visibility,
+		};
 
-		var permit = Object.keys(states).some(function (state) {
-			return states[state] && link.visibility[state];
-		});
+		const permit = Object.keys(states).some(state => states[state] && link.visibility[state]);
 
 		links[index].public = permit;
 		return permit;

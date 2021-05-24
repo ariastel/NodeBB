@@ -2,6 +2,8 @@
 
 const categories = require('../categories');
 const events = require('../events');
+const user = require('../user');
+const groups = require('../groups');
 const privileges = require('../privileges');
 
 const categoriesAPI = module.exports;
@@ -37,5 +39,44 @@ categoriesAPI.delete = async function (caller, data) {
 		ip: caller.ip,
 		cid: data.cid,
 		name: name,
+	});
+};
+
+categoriesAPI.getPrivileges = async (caller, cid) => {
+	let responsePayload;
+
+	if (cid === 'admin') {
+		responsePayload = await privileges.admin.list(caller.uid);
+	} else if (!parseInt(cid, 10)) {
+		responsePayload = await privileges.global.list();
+	} else {
+		responsePayload = await privileges.categories.list(cid);
+	}
+
+	return responsePayload;
+};
+
+categoriesAPI.setPrivilege = async (caller, data) => {
+	const [userExists, groupExists] = await Promise.all([
+		user.exists(data.member),
+		groups.exists(data.member),
+	]);
+
+	if (!userExists && !groupExists) {
+		throw new Error('[[error:no-user-or-group]]');
+	}
+
+	await privileges.categories[data.set ? 'give' : 'rescind'](
+		Array.isArray(data.privilege) ? data.privilege : [data.privilege], data.cid, data.member
+	);
+
+	await events.log({
+		uid: caller.uid,
+		type: 'privilege-change',
+		ip: caller.ip,
+		privilege: data.privilege.toString(),
+		cid: data.cid,
+		action: data.set ? 'grant' : 'rescind',
+		target: data.member,
 	});
 };
