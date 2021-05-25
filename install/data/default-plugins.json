@@ -19,6 +19,7 @@
   "@ariastel/nodebb-plugin-signature-display",
   "@ariastel/nodebb-plugin-simple-spoiler",
   "@ariastel/nodebb-plugin-sso-discord-alt",
+  "@ariastel/nodebb-plugin-sso-google",
   "@ariastel/nodebb-plugin-sso-riot",
   "@ariastel/nodebb-plugin-sso-vk",
   "@ariastel/nodebb-plugin-super-categories",
