@@ -136,7 +136,7 @@
     "composer.handle_placeholder": "Введите ваше имя здесь",
     "composer.discard": "Отменить",
     "composer.submit": "Отправить",
-    "composer.schedule": "Schedule",
+    "composer.schedule": "Запланировать",
     "composer.replying_to": "Ответ %1",
     "composer.new_topic": "Создать тему",
     "composer.uploading": "загрузка...",
