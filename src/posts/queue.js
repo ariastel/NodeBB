@@ -229,10 +229,15 @@ module.exports = function (Posts) {
 	}
 
 	Posts.removeFromQueue = async function (id) {
+		const data = await getParsedObject(id);
+		if (!data) {
+			return;
+		}
 		await removeQueueNotification(id);
 		await db.sortedSetRemove('post:queue', id);
 		await db.delete(`post:queue:${id}`);
 		cache.del('post-queue');
+		return data;
 	};
 
 	Posts.submitFromQueue = async function (id) {
@@ -241,11 +246,14 @@ module.exports = function (Posts) {
 			return;
 		}
 		if (data.type === 'topic') {
-			await createTopic(data.data);
+			const result = await createTopic(data.data);
+			data.pid = result.postData.pid;
 		} else if (data.type === 'reply') {
-			await createReply(data.data);
+			const result = await createReply(data.data);
+			data.pid = result.pid;
 		}
 		await Posts.removeFromQueue(id);
+		return data;
 	};
 
 	async function getParsedObject(id) {
@@ -262,6 +270,7 @@ module.exports = function (Posts) {
 		const result = await topics.post(data);
 		await topics.thumbs.migrate(data.uuid, result.topicData.tid);
 		socketHelpers.notifyNew(data.uid, 'newTopic', { posts: [result.postData], topic: result.topicData });
+		return result;
 	}
 
 	async function createReply(data) {
@@ -272,6 +281,7 @@ module.exports = function (Posts) {
 			'downvote:disabled': !!meta.config['downvote:disabled'],
 		};
 		socketHelpers.notifyNew(data.uid, 'newPost', result);
+		return postData;
 	}
 
 	Posts.editQueuedContent = async function (uid, editData) {
