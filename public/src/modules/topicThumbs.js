@@ -47,6 +47,7 @@ define('topicThumbs', ['api', 'bootbox', 'uploader', 'benchpress', 'translator',
 				if (modal) {
 					translator.translate(html, function (translated) {
 						modal.find('.bootbox-body').html(translated);
+						Thumbs.modal.handleCount({ modal, numThumbs });
 						Thumbs.modal.handleSort({ modal, numThumbs });
 					});
 				} else {
@@ -56,7 +57,7 @@ define('topicThumbs', ['api', 'bootbox', 'uploader', 'benchpress', 'translator',
 						buttons: {
 							add: {
 								label: '<i class="fa fa-plus"></i> [[modules:thumbs.modal.add]]',
-								className: 'btn-success',
+								className: 'thumb-add-button btn-success',
 								callback: () => {
 									Thumbs.upload(id).then(() => {
 										Thumbs.modal.open({ ...payload, modal });
@@ -75,6 +76,7 @@ define('topicThumbs', ['api', 'bootbox', 'uploader', 'benchpress', 'translator',
 						},
 					});
 					Thumbs.modal.handleDelete({ ...payload, modal });
+					Thumbs.modal.handleCount({ modal, numThumbs });
 					Thumbs.modal.handleSort({ modal, numThumbs });
 				}
 			});
@@ -101,6 +103,15 @@ define('topicThumbs', ['api', 'bootbox', 'uploader', 'benchpress', 'translator',
 				});
 			}
 		});
+	};
+
+	Thumbs.modal.handleCount = ({ modal, numThumbs }) => {
+		const selectorEl = modal.find('.thumb-add-button');
+		if (numThumbs >= 1) {
+			selectorEl.addClass('hidden');
+		} else {
+			selectorEl.removeClass('hidden');
+		}
 	};
 
 	Thumbs.modal.handleSort = ({ modal, numThumbs }) => {
