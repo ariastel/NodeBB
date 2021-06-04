@@ -313,6 +313,13 @@
 
 			<div class="checkbox">
 				<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
+					<input class="mdl-switch__input" type="checkbox" data-field="openOutgoingImageLinksInNewTab">
+					<span class="mdl-switch__label"><strong>[[admin/settings/user:outgoing-image-new-tab]]</strong></span>
+				</label>
+			</div>
+
+			<div class="checkbox">
+				<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
 					<input class="mdl-switch__input" type="checkbox" data-field="topicSearchEnabled">
 					<span class="mdl-switch__label"><strong>[[admin/settings/user:topic-search]]</strong></span>
 				</label>

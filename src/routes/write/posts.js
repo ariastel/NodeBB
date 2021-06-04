@@ -5,12 +5,12 @@ const middleware = require('../../middleware');
 const controllers = require('../../controllers');
 const routeHelpers = require('../helpers');
 
-const setupApiRoute = routeHelpers.setupApiRoute;
+const { setupApiRoute } = routeHelpers;
 
 module.exports = function () {
-	const middlewares = [middleware.authenticate];
+	const middlewares = [middleware.ensureLoggedIn];
 
-	setupApiRoute(router, 'get', '/:pid', [middleware.authenticateOrGuest], controllers.write.posts.get);
+	setupApiRoute(router, 'get', '/:pid', [], controllers.write.posts.get);
 	// There is no POST route because you POST to a topic to create a new post. Intuitive, no?
 	setupApiRoute(router, 'put', '/:pid', [...middlewares, middleware.checkRequired.bind(null, ['content'])], controllers.write.posts.edit);
 	setupApiRoute(router, 'delete', '/:pid', [...middlewares, middleware.assert.post], controllers.write.posts.purge);
@@ -26,9 +26,10 @@ module.exports = function () {
 	setupApiRoute(router, 'put', '/:pid/bookmark', [...middlewares, middleware.assert.post], controllers.write.posts.bookmark);
 	setupApiRoute(router, 'delete', '/:pid/bookmark', [...middlewares, middleware.assert.post], controllers.write.posts.unbookmark);
 
-	setupApiRoute(router, 'get', '/:pid/diffs', [middleware.authenticateOrGuest, middleware.assert.post], controllers.write.posts.getDiffs);
-	setupApiRoute(router, 'get', '/:pid/diffs/:since', [middleware.authenticateOrGuest, middleware.assert.post], controllers.write.posts.loadDiff);
+	setupApiRoute(router, 'get', '/:pid/diffs', [middleware.assert.post], controllers.write.posts.getDiffs);
+	setupApiRoute(router, 'get', '/:pid/diffs/:since', [middleware.assert.post], controllers.write.posts.loadDiff);
 	setupApiRoute(router, 'put', '/:pid/diffs/:since', [...middlewares, middleware.assert.post], controllers.write.posts.restoreDiff);
+	setupApiRoute(router, 'delete', '/:pid/diffs/:timestamp', [...middlewares, middleware.assert.post], controllers.write.posts.deleteDiff);
 
 	return router;
 };

@@ -7,9 +7,10 @@ const _ = require('lodash');
 const meta = require('../meta');
 const languages = require('../languages');
 const helpers = require('./helpers');
+const plugins = require('../plugins');
 
 module.exports = function (middleware) {
-	middleware.addHeaders = helpers.try(function addHeaders(req, res, next) {
+	middleware.addHeaders = helpers.try((req, res, next) => {
 		const headers = {
 			'X-Powered-By': encodeURI(meta.config['powered-by'] || 'NodeBB'),
 			'Access-Control-Allow-Methods': encodeURI(meta.config['access-control-allow-methods'] || ''),
@@ -17,7 +18,7 @@ module.exports = function (middleware) {
 		};
 
 		if (meta.config['csp-frame-ancestors']) {
-			headers['Content-Security-Policy'] = 'frame-ancestors ' + meta.config['csp-frame-ancestors'];
+			headers['Content-Security-Policy'] = `frame-ancestors ${meta.config['csp-frame-ancestors']}`;
 			if (meta.config['csp-frame-ancestors'] === '\'none\'') {
 				headers['X-Frame-Options'] = 'DENY';
 			}
@@ -28,9 +29,7 @@ module.exports = function (middleware) {
 
 		if (meta.config['access-control-allow-origin']) {
 			let origins = meta.config['access-control-allow-origin'].split(',');
-			origins = origins.map(function (origin) {
-				return origin && origin.trim();
-			});
+			origins = origins.map(origin => origin && origin.trim());
 
 			if (origins.includes(req.get('origin'))) {
 				headers['Access-Control-Allow-Origin'] = encodeURI(req.get('origin'));
@@ -40,17 +39,17 @@ module.exports = function (middleware) {
 
 		if (meta.config['access-control-allow-origin-regex']) {
 			let originsRegex = meta.config['access-control-allow-origin-regex'].split(',');
-			originsRegex = originsRegex.map(function (origin) {
+			originsRegex = originsRegex.map((origin) => {
 				try {
 					origin = new RegExp(origin.trim());
 				} catch (err) {
-					winston.error('[middleware.addHeaders] Invalid RegExp For access-control-allow-origin ' + origin);
+					winston.error(`[middleware.addHeaders] Invalid RegExp For access-control-allow-origin ${origin}`);
 					origin = null;
 				}
 				return origin;
 			});
 
-			originsRegex.forEach(function (regex) {
+			originsRegex.forEach((regex) => {
 				if (regex && regex.test(req.get('origin'))) {
 					headers['Access-Control-Allow-Origin'] = encodeURI(req.get('origin'));
 					headers.Vary = headers.Vary ? `${headers.Vary}, Origin` : 'Origin';
@@ -66,19 +65,22 @@ module.exports = function (middleware) {
 			headers['X-Upstream-Hostname'] = os.hostname();
 		}
 
-		for (const key in headers) {
-			if (headers.hasOwnProperty(key) && headers[key]) {
-				res.setHeader(key, headers[key]);
+		for (const [key, value] of Object.entries(headers)) {
+			if (value) {
+				res.setHeader(key, value);
 			}
 		}
 
 		next();
 	});
 
-	middleware.autoLocale = helpers.try(async function autoLocale(req, res, next) {
-		let langs;
+	middleware.autoLocale = helpers.try(async (req, res, next) => {
+		await plugins.hooks.fire('filter:middleware.autoLocale', {
+			req: req,
+			res: res,
+		});
 		if (req.query.lang) {
-			langs = await listCodes();
+			const langs = await listCodes();
 			if (!langs.includes(req.query.lang)) {
 				req.query.lang = meta.config.defaultLang;
 			}
@@ -87,7 +89,7 @@ module.exports = function (middleware) {
 		if (parseInt(req.uid, 10) > 0 || !meta.config.autoDetectLang) {
 			return next();
 		}
-		langs = await listCodes();
+		const langs = await listCodes();
 		const lang = req.acceptsLanguages(langs);
 		if (!lang) {
 			return next();
@@ -102,7 +104,7 @@ module.exports = function (middleware) {
 			const codes = await languages.listCodes();
 			return _.uniq([defaultLang, ...codes]);
 		} catch (err) {
-			winston.error('[middleware/autoLocale] Could not retrieve languages codes list! ' + err.stack);
+			winston.error(`[middleware/autoLocale] Could not retrieve languages codes list! ${err.stack}`);
 			return [defaultLang];
 		}
 	}

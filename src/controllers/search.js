@@ -30,6 +30,7 @@ searchController.search = async function (req, res, next) {
 	req.query.in = req.query.in || 'posts';
 	const allowed = (req.query.in === 'users' && userPrivileges['search:users']) ||
 					(req.query.in === 'tags' && userPrivileges['search:tags']) ||
+					(req.query.in === 'categories') ||
 					(['titles', 'titlesposts', 'posts'].includes(req.query.in) && userPrivileges['search:content']);
 
 	if (!allowed) {
@@ -77,8 +78,9 @@ searchController.search = async function (req, res, next) {
 		return res.json(searchData);
 	}
 
-	searchData.categories = categoriesData;
-	searchData.categoriesCount = Math.max(10, Math.min(20, categoriesData.length));
+	searchData.allCategories = categoriesData;
+	searchData.allCategoriesCount = Math.max(10, Math.min(20, categoriesData.length));
+
 	searchData.breadcrumbs = helpers.buildBreadcrumbs([{ text: '[[global:search]]' }]);
 	searchData.expandSearch = !req.query.term;
 

@@ -2,8 +2,8 @@
 
 
 define('forum/register', [
-	'translator', 'zxcvbn', 'slugify', 'api', 'jquery-form',
-], function (translator, zxcvbn, slugify, api) {
+	'translator', 'zxcvbn', 'slugify', 'api', 'forum/login', 'jquery-form',
+], function (translator, zxcvbn, slugify, api, Login) {
 	var Register = {};
 	var validationError = false;
 	var successIcon = '';
@@ -17,7 +17,6 @@ define('forum/register', [
 
 		handleLanguageOverride();
 
-		$('#referrer').val(app.previousUrl);
 		$('#content #noscript').val('false');
 
 		email.on('blur', function () {
@@ -65,6 +64,9 @@ define('forum/register', [
 			});
 		}
 
+		// Guard against caps lock
+		Login.capsLockCheck(document.querySelector('#password'), document.querySelector('#caps-lock-warning'));
+
 		register.on('click', function (e) {
 			var registerBtn = $(this);
 			var errorEl = $('#register-error-notify');
@@ -86,10 +88,10 @@ define('forum/register', [
 						if (!data) {
 							return;
 						}
-						if (data.referrer) {
-							var pathname = utils.urlToLocation(data.referrer).pathname;
+						if (data.next) {
+							var pathname = utils.urlToLocation(data.next).pathname;
 
-							var params = utils.params({ url: data.referrer });
+							var params = utils.params({ url: data.next });
 							params.registered = true;
 							var qs = decodeURIComponent($.param(params));
 

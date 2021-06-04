@@ -1,16 +1,16 @@
 'use strict';
 
-var db = require('../database');
-var topics = require('../topics');
-var plugins = require('../plugins');
-var meta = require('../meta');
+const db = require('../database');
+const topics = require('../topics');
+const plugins = require('../plugins');
+const meta = require('../meta');
 
 module.exports = function (User) {
 	User.updateLastOnlineTime = async function (uid) {
 		if (!(parseInt(uid, 10) > 0)) {
 			return;
 		}
-		const userData = await db.getObjectFields('user:' + uid, ['status', 'lastonline']);
+		const userData = await db.getObjectFields(`user:${uid}`, ['status', 'lastonline']);
 		const now = Date.now();
 		if (userData.status === 'offline' || now - parseInt(userData.lastonline, 10) < 300000) {
 			return;

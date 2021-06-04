@@ -14,7 +14,7 @@ userController.getCurrentUser = async function (req, res) {
 		return res.status(401).json('not-authorized');
 	}
 	const userslug = await user.getUserField(req.uid, 'userslug');
-	const userData = await accountHelpers.getUserDataByUserSlug(userslug, req.uid);
+	const userData = await accountHelpers.getUserDataByUserSlug(userslug, req.uid, req.query);
 	res.json(userData);
 };
 
@@ -78,15 +78,15 @@ userController.getUserDataByUID = async function (callerUid, uid) {
 };
 
 userController.exportPosts = async function (req, res, next) {
-	sendExport(res.locals.uid + '_posts.csv', 'text/csv', res, next);
+	sendExport(`${res.locals.uid}_posts.csv`, 'text/csv', res, next);
 };
 
 userController.exportUploads = function (req, res, next) {
-	sendExport(res.locals.uid + '_uploads.zip', 'application/zip', res, next);
+	sendExport(`${res.locals.uid}_uploads.zip`, 'application/zip', res, next);
 };
 
 userController.exportProfile = async function (req, res, next) {
-	sendExport(res.locals.uid + '_profile.json', 'application/json', res, next);
+	sendExport(`${res.locals.uid}_profile.json`, 'application/json', res, next);
 };
 
 function sendExport(filename, type, res, next) {
@@ -94,9 +94,9 @@ function sendExport(filename, type, res, next) {
 		root: path.join(__dirname, '../../build/export'),
 		headers: {
 			'Content-Type': type,
-			'Content-Disposition': 'attachment; filename=' + filename,
+			'Content-Disposition': `attachment; filename=${filename}`,
 		},
-	}, function (err) {
+	}, (err) => {
 		if (err) {
 			if (err.code === 'ENOENT') {
 				res.locals.isAPI = false;

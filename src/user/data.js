@@ -19,15 +19,9 @@ const intFields = [
 ];
 
 module.exports = function (User) {
-	const iconBackgrounds = [
-		'#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3',
-		'#009688', '#1b5e20', '#33691e', '#827717', '#e65100', '#ff5722',
-		'#795548', '#607d8b',
-	];
-
 	const fieldWhitelist = [
 		'uid', 'username', 'userslug', 'email', 'email:confirmed', 'joindate',
-		'lastonline', 'picture', 'fullname', 'location', 'birthday', 'website',
+		'lastonline', 'picture', 'icon:bgColor', 'fullname', 'location', 'birthday', 'website',
 		'aboutme', 'signature', 'uploadedpicture', 'profileviews', 'reputation',
 		'postcount', 'topiccount', 'lastposttime', 'banned', 'banned:expire',
 		'status', 'flags', 'followerCount', 'followingCount', 'cover:url',
@@ -64,13 +58,13 @@ module.exports = function (User) {
 
 		const results = await plugins.hooks.fire('filter:user.whitelistFields', { uids: uids, whitelist: fieldWhitelist.slice() });
 		if (!fields.length) {
-			fields = results.whitelist;
+			fields = results.whitelist || [];
 		} else {
 			// Never allow password retrieval via this method
 			fields = fields.filter(value => value !== 'password');
 		}
 
-		const users = await db.getObjectsFields(uniqueUids.map(uid => 'user:' + uid), fields);
+		const users = await db.getObjectsFields(uniqueUids.map(uid => `user:${uid}`), fields);
 		const result = await plugins.hooks.fire('filter:user.getFields', {
 			uids: uniqueUids,
 			users: users,
@@ -116,7 +110,7 @@ module.exports = function (User) {
 
 	function uidsToUsers(uids, uniqueUids, usersData) {
 		const uidToUser = _.zipObject(uniqueUids, usersData);
-		const users = uids.map(function (uid) {
+		const users = uids.map((uid) => {
 			const user = uidToUser[uid] || { ...User.guestData };
 			if (!parseInt(user.uid, 10)) {
 				user.username = (user.hasOwnProperty('oldUid') && parseInt(user.oldUid, 10)) ? '[[global:former_user]]' : '[[global:guest]]';
@@ -152,12 +146,12 @@ module.exports = function (User) {
 		if (meta.config.showFullnameAsDisplayName) {
 			const uids = users.map(user => user.uid);
 			uidToSettings = _.zipObject(uids, await db.getObjectsFields(
-				uids.map(uid => 'user:' + uid + ':settings'),
+				uids.map(uid => `user:${uid}:settings`),
 				['showfullname']
 			));
 		}
 
-		await Promise.all(users.map(async function (user) {
+		await Promise.all(users.map(async (user) => {
 			if (!user) {
 				return;
 			}
@@ -203,11 +197,15 @@ module.exports = function (User) {
 			}
 
 			// User Icons
-			if (user.hasOwnProperty('picture') && user.username && parseInt(user.uid, 10) && !meta.config.defaultAvatar) {
+			if (requestedFields.includes('picture') && user.username && parseInt(user.uid, 10) && !meta.config.defaultAvatar) {
+				const iconBackgrounds = await User.getIconBackgrounds(user.uid);
+				let bgColor = await User.getUserField(user.uid, 'icon:bgColor');
+				if (!iconBackgrounds.includes(bgColor)) {
+					bgColor = Array.prototype.reduce.call(user.username, (cur, next) => cur + next.charCodeAt(), 0);
+					bgColor = iconBackgrounds[bgColor % iconBackgrounds.length];
+				}
 				user['icon:text'] = (user.username[0] || '').toUpperCase();
-				user['icon:bgColor'] = iconBackgrounds[Array.prototype.reduce.call(user.username, function (cur, next) {
-					return cur + next.charCodeAt();
-				}, 0) % iconBackgrounds.length];
+				user['icon:bgColor'] = bgColor;
 			}
 
 			if (user.hasOwnProperty('joindate')) {
@@ -219,7 +217,8 @@ module.exports = function (User) {
 			}
 
 			if (user.hasOwnProperty('banned') || user.hasOwnProperty('banned:expire')) {
-				const result = User.bans.calcExpiredFromUserData(user);
+				const result = await User.bans.calcExpiredFromUserData(user);
+				user.banned = result.banned;
 				const unban = result.banned && result.banExpired;
 				user.banned_until = unban ? 0 : user['banned:expire'];
 				user.banned_until_readable = user.banned_until && !unban ? utils.toISOString(user.banned_until) : 'Not Banned';
@@ -273,6 +272,17 @@ module.exports = function (User) {
 		}
 	}
 
+	User.getIconBackgrounds = async (uid = 0) => {
+		let iconBackgrounds = [
+			'#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3',
+			'#009688', '#1b5e20', '#33691e', '#827717', '#e65100', '#ff5722',
+			'#795548', '#607d8b',
+		];
+
+		({ iconBackgrounds } = await plugins.hooks.fire('filter:user.iconBackgrounds', { uid, iconBackgrounds }));
+		return iconBackgrounds;
+	};
+
 	User.getDefaultAvatar = function () {
 		if (!meta.config.defaultAvatar) {
 			return '';
@@ -285,11 +295,9 @@ module.exports = function (User) {
 	};
 
 	User.setUserFields = async function (uid, data) {
-		await db.setObject('user:' + uid, data);
-		for (const field in data) {
-			if (data.hasOwnProperty(field)) {
-				plugins.hooks.fire('action:user.set', { uid: uid, field: field, value: data[field], type: 'set' });
-			}
+		await db.setObject(`user:${uid}`, data);
+		for (const [field, value] of Object.entries(data)) {
+			plugins.hooks.fire('action:user.set', { uid, field, value, type: 'set' });
 		}
 	};
 
@@ -302,7 +310,7 @@ module.exports = function (User) {
 	};
 
 	async function incrDecrUserFieldBy(uid, field, value, type) {
-		const newValue = await db.incrObjectFieldBy('user:' + uid, field, value);
+		const newValue = await db.incrObjectFieldBy(`user:${uid}`, field, value);
 		plugins.hooks.fire('action:user.set', { uid: uid, field: field, value: newValue, type: type });
 		return newValue;
 	}

@@ -8,6 +8,7 @@ const path = require('path');
 const childProcess = require('child_process');
 const less = require('less');
 const util = require('util');
+
 const lessRenderAsync = util.promisify(
 	(style, opts, cb) => less.render(String(style), opts, cb)
 );
@@ -26,8 +27,8 @@ const formats = [
 ];
 
 const timestampFormat = winston.format((info) => {
-	var dateString = new Date().toISOString() + ' [' + global.process.pid + ']';
-	info.level = dateString + ' - ' + info.level;
+	const dateString = `${new Date().toISOString()} [${global.process.pid}]`;
+	info.level = `${dateString} - ${info.level}`;
 	return info;
 });
 formats.push(timestampFormat());
@@ -68,10 +69,10 @@ const viewsDir = path.join(paths.baseDir, 'build/public/templates');
 
 web.install = async function (port) {
 	port = port || 4567;
-	winston.info('Launching web installer on port ' + port);
+	winston.info(`Launching web installer on port ${port}`);
 
 	app.use(express.static('public', {}));
-	app.engine('tpl', function (filepath, options, callback) {
+	app.engine('tpl', (filepath, options, callback) => {
 		filepath = filepath.replace(/\.tpl$/, '.js');
 
 		Benchpress.__express(filepath, options, callback);
@@ -98,7 +99,7 @@ web.install = async function (port) {
 
 
 function launchExpress(port) {
-	server = app.listen(port, function () {
+	server = app.listen(port, () => {
 		winston.info('Web installer listening on http://%s:%s', '0.0.0.0', port);
 	});
 }
@@ -116,11 +117,9 @@ function ping(req, res) {
 }
 
 function welcome(req, res) {
-	var dbs = ['redis', 'mongo', 'postgres'];
-	var databases = dbs.map(function (databaseName) {
-		var questions = require('../src/database/' + databaseName).questions.filter(function (question) {
-			return question && !question.hideOnWebInstall;
-		});
+	const dbs = ['redis', 'mongo', 'postgres'];
+	const databases = dbs.map((databaseName) => {
+		const questions = require(`../src/database/${databaseName}`).questions.filter(question => question && !question.hideOnWebInstall);
 
 		return {
 			name: databaseName,
@@ -128,10 +127,10 @@ function welcome(req, res) {
 		};
 	});
 
-	var defaults = require('./data/defaults');
+	const defaults = require('./data/defaults');
 
 	res.render('install/index', {
-		url: nconf.get('url') || (req.protocol + '://' + req.get('host')),
+		url: nconf.get('url') || (`${req.protocol}://${req.get('host')}`),
 		launchUrl: launchUrl,
 		skipGeneralSetup: !!nconf.get('url'),
 		databases: databases,
@@ -151,23 +150,23 @@ function install(req, res) {
 	}
 	req.setTimeout(0);
 	installing = true;
-	var setupEnvVars = nconf.get();
-	for (var i in req.body) {
-		if (req.body.hasOwnProperty(i) && !process.env.hasOwnProperty(i)) {
-			setupEnvVars[i.replace(':', '__')] = req.body[i];
+	const setupEnvVars = nconf.get();
+	for (const [key, value] of Object.entries(req.body)) {
+		if (!process.env.hasOwnProperty(key)) {
+			setupEnvVars[key.replace(':', '__')] = value;
 		}
 	}
 
 	// Flatten any objects in setupEnvVars
 	const pushToRoot = function (parentKey, key) {
-		setupEnvVars[parentKey + '__' + key] = setupEnvVars[parentKey][key];
+		setupEnvVars[`${parentKey}__${key}`] = setupEnvVars[parentKey][key];
 	};
-	for (var j in setupEnvVars) {
-		if (setupEnvVars.hasOwnProperty(j) && typeof setupEnvVars[j] === 'object' && setupEnvVars[j] !== null && !Array.isArray(setupEnvVars[j])) {
-			Object.keys(setupEnvVars[j]).forEach(pushToRoot.bind(null, j));
-			delete setupEnvVars[j];
-		} else if (Array.isArray(setupEnvVars[j])) {
-			setupEnvVars[j] = JSON.stringify(setupEnvVars[j]);
+	for (const [parentKey, value] of Object.entries(setupEnvVars)) {
+		if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+			Object.keys(value).forEach(key => pushToRoot(parentKey, key));
+			delete setupEnvVars[parentKey];
+		} else if (Array.isArray(value)) {
+			setupEnvVars[parentKey] = JSON.stringify(value);
 		}
 	}
 
@@ -175,11 +174,11 @@ function install(req, res) {
 	winston.info(setupEnvVars);
 	launchUrl = setupEnvVars.url;
 
-	var child = require('child_process').fork('app', ['--setup'], {
+	const child = require('child_process').fork('app', ['--setup'], {
 		env: setupEnvVars,
 	});
 
-	child.on('close', function (data) {
+	child.on('close', (data) => {
 		installing = false;
 		success = data === 0;
 		error = data !== 0;
@@ -193,7 +192,7 @@ async function launch(req, res) {
 		res.json({});
 		server.close();
 		req.setTimeout(0);
-		var child;
+		let child;
 
 		if (!nconf.get('launchCmd')) {
 			child = childProcess.spawn('node', ['loader.js'], {
@@ -257,7 +256,7 @@ async function compileLess() {
 		const css = await lessRenderAsync(style, { filename: path.resolve(installSrc) });
 		await fs.promises.writeFile(path.join(__dirname, '../public/installer.css'), css.css);
 	} catch (err) {
-		winston.error('Unable to compile LESS: \n' + err.stack);
+		winston.error(`Unable to compile LESS: \n${err.stack}`);
 		throw err;
 	}
 }
@@ -289,7 +288,7 @@ async function copyCSS() {
 async function loadDefaults() {
 	const setupDefaultsPath = path.join(__dirname, '../setup.json');
 	try {
-		await fs.promises.access(setupDefaultsPath, fs.constants.F_OK | fs.constants.R_OK);
+		await fs.promises.access(setupDefaultsPath, fs.constants.F_OK + fs.constants.R_OK);
 	} catch (err) {
 		// setup.json not found or inaccessible, proceed with no defaults
 		if (err.code !== 'ENOENT') {

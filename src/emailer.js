@@ -25,6 +25,8 @@ const Emailer = module.exports;
 let prevConfig;
 let app;
 
+Emailer.fallbackNotFound = false;
+
 Emailer.transports = {
 	sendmail: nodemailer.createTransport({
 		sendmail: true,
@@ -47,8 +49,8 @@ const smtpSettingsChanged = (config) => {
 		'email:smtpTransport:host',
 		'email:smtpTransport:security',
 	];
-
-	return settings.some(key => config[key] !== prevConfig[key]);
+	// config only has these properties if settings are saved on /admin/settings/email
+	return settings.some(key => config.hasOwnProperty(key) && config[key] !== prevConfig[key]);
 };
 
 const getHostname = () => {
@@ -59,16 +61,20 @@ const getHostname = () => {
 
 const buildCustomTemplates = async (config) => {
 	try {
-		const [templates, allPaths] = await Promise.all([
-			Emailer.getTemplates(config),
-			file.walk(viewsDir),
-		]);
-
 		// If the new config contains any email override values, re-compile those templates
 		const toBuild = Object
 			.keys(config)
 			.filter(prop => prop.startsWith('email:custom:'))
 			.map(key => key.split(':')[2]);
+
+		if (!toBuild.length) {
+			return;
+		}
+
+		const [templates, allPaths] = await Promise.all([
+			Emailer.getTemplates(config),
+			file.walk(viewsDir),
+		]);
 
 		const templatesToBuild = templates.filter(template => toBuild.includes(template.path));
 		const paths = _.fromPairs(allPaths.map((p) => {
@@ -85,7 +91,7 @@ const buildCustomTemplates = async (config) => {
 		Benchpress.flush();
 		winston.verbose('[emailer] Built custom email templates');
 	} catch (err) {
-		winston.error('[emailer] Failed to build custom email templates\n' + err.stack);
+		winston.error(`[emailer] Failed to build custom email templates\n${err.stack}`);
 	}
 };
 
@@ -101,9 +107,9 @@ Emailer.getTemplates = async (config) => {
 		return {
 			path: path,
 			fullpath: email,
-			text: config['email:custom:' + path] || original,
+			text: config[`email:custom:${path}`] || original,
 			original: original,
-			isCustom: !!config['email:custom:' + path],
+			isCustom: !!config[`email:custom:${path}`],
 		};
 	}));
 	return templates;
@@ -114,6 +120,7 @@ Emailer.setupFallbackTransport = (config) => {
 	// Enable SMTP transport if enabled in ACP
 	if (parseInt(config['email:smtpTransport:enabled'], 10) === 1) {
 		const smtpOptions = {
+			name: getHostname(),
 			pool: config['email:smtpTransport:pool'],
 		};
 
@@ -179,16 +186,18 @@ Emailer.registerApp = (expressApp) => {
 	// which is updated before the pubsub handler is called
 	prevConfig = { ...meta.config };
 
-	// Update default payload if new logo is uploaded
 	pubsub.on('config:update', (config) => {
+		// config object only contains properties for the specific acp settings page
+		// not the entire meta.config object
 		if (config) {
-			if (config['brand:emailLogo']) {
+			// Update default payload if new logo is uploaded
+			if (config.hasOwnProperty('brand:emailLogo')) {
 				Emailer._defaultPayload.logo.src = config['brand:emailLogo'];
 			}
-			if (config['brand:emailLogo:height']) {
+			if (config.hasOwnProperty('brand:emailLogo:height')) {
 				Emailer._defaultPayload.logo.height = config['brand:emailLogo:height'];
 			}
-			if (config['brand:emailLogo:width']) {
+			if (config.hasOwnProperty('brand:emailLogo:width')) {
 				Emailer._defaultPayload.logo.width = config['brand:emailLogo:width'];
 			}
 
@@ -197,7 +206,7 @@ Emailer.registerApp = (expressApp) => {
 			}
 			buildCustomTemplates(config);
 
-			prevConfig = config;
+			prevConfig = { ...prevConfig, ...config };
 		}
 	});
 
@@ -209,22 +218,23 @@ Emailer.send = async (template, uid, params) => {
 		throw Error('[emailer] App not ready!');
 	}
 
-	const [userData, userSettings] = await Promise.all([
-		User.getUserFields(uid, ['email', 'username', 'email:confirmed']),
-		User.getSettings(uid),
-	]);
-
+	let userData = await User.getUserFields(uid, ['email', 'username', 'email:confirmed']);
+	({ template, userData, params } = await Plugins.hooks.fire('filter:email.prepare', { template, uid, userData, params }));
 	if (!userData || !userData.email) {
-		winston.warn(`uid : ${uid} has no email, not sending "${template}" email.`);
+		if (process.env.NODE_ENV === 'development') {
+			winston.warn(`uid : ${uid} has no email, not sending "${template}" email.`);
+		}
 		return;
 	}
 
 	const allowedTpls = ['verify_email', 'welcome', 'registration_accepted'];
 	if (meta.config.requireEmailConfirmation && !userData['email:confirmed'] && !allowedTpls.includes(template)) {
-		winston.warn(`uid : ${uid} (${userData.email}) has not confirmed email, not sending "${template}" email.`);
+		if (process.env.NODE_ENV === 'development') {
+			winston.warn(`uid : ${uid} (${userData.email}) has not confirmed email, not sending "${template}" email.`);
+		}
 		return;
 	}
-
+	const userSettings = await User.getSettings(uid);
 	// Combined passed-in payload with default values
 	params = { ...Emailer._defaultPayload, ...params };
 	params.uid = uid;
@@ -263,8 +273,8 @@ Emailer.sendToEmail = async (template, email, language, params) => {
 
 		const unsubUrl = [nconf.get('url'), 'email', 'unsubscribe', payload].join('/');
 		params.headers = {
-			'List-Id': '<' + [template, params.uid, getHostname()].join('.') + '>',
-			'List-Unsubscribe': '<' + unsubUrl + '>',
+			'List-Id': `<${[template, params.uid, getHostname()].join('.')}>`,
+			'List-Unsubscribe': `<${unsubUrl}>`,
 			'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
 			...params.headers,
 		};
@@ -290,9 +300,9 @@ Emailer.sendToEmail = async (template, email, language, params) => {
 	const data = await Plugins.hooks.fire('filter:email.modify', {
 		_raw: params,
 		to: email,
-		from: meta.config['email:from'] || 'no-reply@' + getHostname(),
+		from: meta.config['email:from'] || `no-reply@${getHostname()}`,
 		from_name: meta.config['email:from_name'] || 'NodeBB',
-		subject: '[' + meta.config.title + '] ' + _.unescape(subject),
+		subject: `[${meta.config.title}] ${_.unescape(subject)}`,
 		html: html,
 		plaintext: htmlToText(html, {
 			tags: { img: { format: 'skip' } },
@@ -304,15 +314,20 @@ Emailer.sendToEmail = async (template, email, language, params) => {
 		headers: params.headers,
 		rtl: params.rtl,
 	});
-
+	const usingFallback = !Plugins.hooks.hasListeners('filter:email.send') &&
+		!Plugins.hooks.hasListeners('static:email.send');
 	try {
 		if (Plugins.hooks.hasListeners('filter:email.send')) {
+			// Deprecated, remove in v1.18.0
 			await Plugins.hooks.fire('filter:email.send', data);
+		} else if (Plugins.hooks.hasListeners('static:email.send')) {
+			await Plugins.hooks.fire('static:email.send', data);
 		} else {
 			await Emailer.sendViaFallback(data);
 		}
 	} catch (err) {
-		if (err && err.code === 'ENOENT') {
+		if (err.code === 'ENOENT' && usingFallback) {
+			Emailer.fallbackNotFound = true;
 			throw new Error('[[error:sendmail-not-found]]');
 		} else {
 			throw err;
@@ -326,15 +341,15 @@ Emailer.sendViaFallback = async (data) => {
 	delete data.plaintext;
 
 	// NodeMailer uses a combined "from"
-	data.from = data.from_name + '<' + data.from + '>';
+	data.from = `${data.from_name}<${data.from}>`;
 	delete data.from_name;
 
-	winston.verbose('[emailer] Sending email to uid ' + data.uid + ' (' + data.to + ')');
+	winston.verbose(`[emailer] Sending email to uid ${data.uid} (${data.to})`);
 	await Emailer.fallbackTransport.sendMail(data);
 };
 
 Emailer.renderAndTranslate = async (template, params, lang) => {
-	const html = await app.renderAsync('emails/' + template, params);
+	const html = await app.renderAsync(`emails/${template}`, params);
 	return await translator.translate(html, lang);
 };
 

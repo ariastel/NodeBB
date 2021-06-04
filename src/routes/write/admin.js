@@ -5,12 +5,14 @@ const middleware = require('../../middleware');
 const controllers = require('../../controllers');
 const routeHelpers = require('../helpers');
 
-const setupApiRoute = routeHelpers.setupApiRoute;
+const { setupApiRoute } = routeHelpers;
 
 module.exports = function () {
-	const middlewares = [middleware.authenticate];
+	const middlewares = [middleware.ensureLoggedIn];
 
 	setupApiRoute(router, 'put', '/settings/:setting', [...middlewares, middleware.checkRequired.bind(null, ['value'])], controllers.write.admin.updateSetting);
+
+	setupApiRoute(router, 'get', '/analytics/:set', [...middlewares], controllers.write.admin.getAnalytics);
 
 	return router;
 };

@@ -116,7 +116,7 @@ define('forum/account/header', [
 	}
 
 	function toggleFollow(type) {
-		api[type === 'follow' ? 'put' : 'delete']('/users/' + ajaxify.data.uid + '/follow', undefined, function (err) {
+		api[type === 'follow' ? 'put' : 'del']('/users/' + ajaxify.data.uid + '/follow', undefined, function (err) {
 			if (err) {
 				return app.alertError(err);
 			}
@@ -150,7 +150,9 @@ define('forum/account/header', [
 								return data;
 							}, {});
 
-							var until = formData.length > 0 ? (Date.now() + (formData.length * 1000 * 60 * 60 * (parseInt(formData.unit, 10) ? 24 : 1))) : 0;
+							var until = formData.length > 0 ? (
+								Date.now() + (formData.length * 1000 * 60 * 60 * (parseInt(formData.unit, 10) ? 24 : 1))
+							) : 0;
 
 							api.put('/users/' + theirid + '/ban', {
 								until: until,

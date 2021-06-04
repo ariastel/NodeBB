@@ -55,12 +55,14 @@ app.cacheBuster = null;
 				}
 			};
 			document.body.addEventListener('click', earlyClick);
-			$(window).on('action:ajaxify.end', function () {
-				document.body.removeEventListener('click', earlyClick);
-				earlyQueue.forEach(function (el) {
-					el.click();
+			require(['hooks'], function (hooks) {
+				hooks.on('action:ajaxify.end', function () {
+					document.body.removeEventListener('click', earlyClick);
+					earlyQueue.forEach(function (el) {
+						el.click();
+					});
+					earlyQueue = [];
 				});
-				earlyQueue = [];
 			});
 		} else {
 			setTimeout(app.handleEarlyClicks, 50);
@@ -177,11 +179,11 @@ app.cacheBuster = null;
 	};
 
 	app.alertError = function (message, timeout) {
-		message = message.message || message;
+		message = (message && message.message) || message;
 
-		if (message === '[[error:invalid-session]]') {
-			app.handleInvalidSession();
-			app.logout(false);
+		if (message === '[[error:revalidate-failure]]') {
+			socket.disconnect();
+			app.reconnect();
 			return;
 		}
 
@@ -195,14 +197,27 @@ app.cacheBuster = null;
 	};
 
 	app.handleInvalidSession = function () {
+		socket.disconnect();
+		app.logout(false);
+		bootbox.alert({
+			title: '[[error:invalid-session]]',
+			message: '[[error:invalid-session-text]]',
+			closeButton: false,
+			callback: function () {
+				window.location.reload();
+			},
+		});
+	};
+
+	app.handleSessionMismatch = () => {
 		if (app.flags._login || app.flags._logout) {
 			return;
 		}
 
 		socket.disconnect();
 		bootbox.alert({
-			title: '[[error:invalid-session]]',
-			message: '[[error:invalid-session-text]]',
+			title: '[[error:session-mismatch]]',
+			message: '[[error:session-mismatch-text]]',
 			closeButton: false,
 			callback: function () {
 				window.location.reload();
@@ -229,7 +244,7 @@ app.cacheBuster = null;
 	};
 
 	app.leaveCurrentRoom = function () {
-		if (!socket) {
+		if (!socket || config.maintenanceMode) {
 			return;
 		}
 		var previousRoom = app.currentRoom;
@@ -410,10 +425,10 @@ app.cacheBuster = null;
 	};
 
 	app.toggleNavbar = function (state) {
-		var navbarEl = $('.navbar');
-		if (navbarEl) {
+		require(['components'], (components) => {
+			const navbarEl = components.get('navbar');
 			navbarEl[state ? 'show' : 'hide']();
-		}
+		});
 	};
 
 	function createHeaderTooltips() {
@@ -545,19 +560,25 @@ app.cacheBuster = null;
 			}, 250);
 		});
 
+		var mousedownOnResults = false;
+		quickSearchResults.on('mousedown', function () {
+			$(window).one('mouseup', function () {
+				quickSearchResults.addClass('hidden');
+			});
+			mousedownOnResults = true;
+		});
 		inputEl.on('blur', function () {
-			setTimeout(function () {
-				if (!inputEl.is(':focus')) {
-					quickSearchResults.addClass('hidden');
-				}
-			}, 200);
+			if (!inputEl.is(':focus') && !mousedownOnResults && !quickSearchResults.hasClass('hidden')) {
+				quickSearchResults.addClass('hidden');
+			}
 		});
 
 		inputEl.on('focus', function () {
+			mousedownOnResults = false;
 			oldValue = inputEl.val();
 			if (inputEl.val() && quickSearchResults.find('#quick-search-results').children().length) {
 				updateCategoryFilterName();
-				quickSearchResults.removeClass('hidden');
+				doSearch();
 				inputEl[0].setSelectionRange(0, inputEl.val().length);
 			}
 		});
@@ -737,20 +758,26 @@ app.cacheBuster = null;
 	};
 
 	app.parseAndTranslate = function (template, blockName, data, callback) {
-		require(['translator', 'benchpress'], function (translator, Benchpress) {
-			if (typeof blockName !== 'string') {
-				callback = data;
-				data = blockName;
-				blockName = undefined;
+		if (typeof blockName !== 'string') {
+			callback = data;
+			data = blockName;
+			blockName = undefined;
+		}
+
+		return new Promise((resolve, reject) => {
+			require(['translator', 'benchpress'], function (translator, Benchpress) {
+				Benchpress.render(template, data, blockName)
+					.then(rendered => translator.translate(rendered))
+					.then(translated => translator.unescape(translated))
+					.then(resolve, reject);
+			});
+		}).then((html) => {
+			html = $(html);
+			if (callback && typeof callback === 'function') {
+				setTimeout(callback, 0, html);
 			}
 
-			Benchpress.render(template, data, blockName)
-				.then(rendered => translator.translate(rendered))
-				.then(translated => translator.unescape(translated))
-				.then(
-					result => setTimeout(callback, 0, $(result)),
-					err => console.error(err)
-				);
+			return html;
 		});
 	};
 
@@ -788,8 +815,9 @@ app.cacheBuster = null;
 	};
 
 	function registerServiceWorker() {
-		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.register(config.relative_path + '/assets/src/service-worker.js')
+		// Do not register for Safari browsers
+		if (!ajaxify.data._locals.useragent.isSafari && 'serviceWorker' in navigator) {
+			navigator.serviceWorker.register(config.relative_path + '/service-worker.js', { scope: config.relative_path + '/' })
 				.then(function () {
 					console.info('ServiceWorker registration succeeded.');
 				}).catch(function (err) {

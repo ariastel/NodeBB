@@ -20,8 +20,8 @@ module.exports = function (SocketPosts) {
 			throw new Error('[[error:no-privileges]]');
 		}
 		const [upvoteUids, downvoteUids] = await Promise.all([
-			db.getSetMembers('pid:' + data.pid + ':upvote'),
-			showDownvotes ? db.getSetMembers('pid:' + data.pid + ':downvote') : [],
+			db.getSetMembers(`pid:${data.pid}:upvote`),
+			showDownvotes ? db.getSetMembers(`pid:${data.pid}:downvote`) : [],
 		]);
 
 		const [upvoters, downvoters] = await Promise.all([
@@ -42,12 +42,21 @@ module.exports = function (SocketPosts) {
 		if (!Array.isArray(pids)) {
 			throw new Error('[[error:invalid-data]]');
 		}
+
+		const [isAdmin = false, isMod = [false]] = await Promise.all([
+			privileges.users.isAdministrator(socket.uid),
+			posts.isModerator(pids, socket.uid),
+		]);
+		if (!isAdmin && !isMod[0]) {
+			return [];
+		}
+
 		const data = await posts.getUpvotedUidsByPids(pids);
 		if (!data.length) {
 			return [];
 		}
 
-		const result = await Promise.all(data.map(async function (uids) {
+		const result = await Promise.all(data.map(async (uids) => {
 			let otherCount = 0;
 			if (uids.length > 6) {
 				otherCount = uids.length - 5;

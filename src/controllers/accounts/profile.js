@@ -8,6 +8,7 @@ const user = require('../../user');
 const posts = require('../../posts');
 const categories = require('../../categories');
 const meta = require('../../meta');
+const privileges = require('../../privileges');
 const accountHelpers = require('./helpers');
 const helpers = require('../helpers');
 const utils = require('../../utils');
@@ -21,11 +22,11 @@ profileController.get = async function (req, res, next) {
 		if (res.locals.isAPI) {
 			req.params.userslug = lowercaseSlug;
 		} else {
-			return res.redirect(nconf.get('relative_path') + '/user/' + lowercaseSlug);
+			return res.redirect(`${nconf.get('relative_path')}/user/${lowercaseSlug}`);
 		}
 	}
 
-	const userData = await accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid);
+	const userData = await accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid, req.query);
 	if (!userData) {
 		return next();
 	}
@@ -65,7 +66,10 @@ async function incrementProfileViews(req, userData) {
 	if (req.uid >= 1) {
 		req.session.uids_viewed = req.session.uids_viewed || {};
 
-		if (req.uid !== userData.uid && (!req.session.uids_viewed[userData.uid] || req.session.uids_viewed[userData.uid] < Date.now() - 3600000)) {
+		if (
+			req.uid !== userData.uid &&
+			(!req.session.uids_viewed[userData.uid] || req.session.uids_viewed[userData.uid] < Date.now() - 3600000)
+		) {
 			await user.incrementUserFieldBy(userData.uid, 'profileviews', 1);
 			req.session.uids_viewed[userData.uid] = Date.now();
 		}
@@ -82,17 +86,19 @@ async function getBestPosts(callerUid, userData) {
 
 async function getPosts(callerUid, userData, setSuffix) {
 	const cids = await categories.getCidsByPrivilege('categories:cid', callerUid, 'topics:read');
-	const keys = cids.map(c => 'cid:' + c + ':uid:' + userData.uid + ':' + setSuffix);
+	const keys = cids.map(c => `cid:${c}:uid:${userData.uid}:${setSuffix}`);
 	let hasMorePosts = true;
 	let start = 0;
 	const count = 10;
 	const postData = [];
 
-	const [isAdmin, isModOfCids] = await Promise.all([
+	const [isAdmin, isModOfCids, canSchedule] = await Promise.all([
 		user.isAdministrator(callerUid),
 		user.isModerator(callerUid, cids),
+		privileges.categories.isUserAllowedTo('topics:schedule', cids, callerUid),
 	]);
 	const cidToIsMod = _.zipObject(cids, isModOfCids);
+	const cidToCanSchedule = _.zipObject(cids, canSchedule);
 
 	do {
 		/* eslint-disable no-await-in-loop */
@@ -102,7 +108,10 @@ async function getPosts(callerUid, userData, setSuffix) {
 		}
 		if (pids.length) {
 			const p = await posts.getPostSummaryByPids(pids, callerUid, { stripTags: false });
-			postData.push(...p.filter(p => p && p.topic && (isAdmin || cidToIsMod[p.topic.cid] || (!p.deleted && !p.topic.deleted))));
+			postData.push(...p.filter(
+				p => p && p.topic && (isAdmin || cidToIsMod[p.topic.cid] ||
+					(p.topic.scheduled && cidToCanSchedule[p.topic.cid]) || (!p.deleted && !p.topic.deleted))
+			));
 		}
 		start += count;
 	} while (postData.length < count && hasMorePosts);
@@ -110,7 +119,7 @@ async function getPosts(callerUid, userData, setSuffix) {
 }
 
 function addMetaTags(res, userData) {
-	var plainAboutMe = userData.aboutme ? utils.stripHTMLTags(utils.decodeHTMLEntities(userData.aboutme)) : '';
+	const plainAboutMe = userData.aboutme ? utils.stripHTMLTags(utils.decodeHTMLEntities(userData.aboutme)) : '';
 	res.locals.metaTags = [
 		{
 			name: 'title',

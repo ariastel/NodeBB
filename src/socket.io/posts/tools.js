@@ -1,5 +1,6 @@
 'use strict';
 
+const db = require('../../database');
 const posts = require('../../posts');
 const flags = require('../../flags');
 const events = require('../../events');
@@ -29,14 +30,12 @@ module.exports = function (SocketPosts) {
 			canFlag: privileges.posts.canFlag(data.pid, socket.uid),
 			flagged: flags.exists('post', data.pid, socket.uid),	// specifically, whether THIS calling user flagged
 			bookmarked: posts.hasBookmarked(data.pid, socket.uid),
-			tools: plugins.hooks.fire('filter:post.tools', { pid: data.pid, uid: socket.uid, tools: [] }),
 			postSharing: social.getActivePostSharing(),
 			history: posts.diffs.exists(data.pid),
 			canViewInfo: privileges.global.can('view:users:info', socket.uid),
 		});
 
 		const postData = results.posts;
-		postData.tools = results.tools.tools;
 		postData.bookmarked = results.bookmarked;
 		postData.selfPost = socket.uid && socket.uid === postData.uid;
 		postData.display_edit_tools = results.canEdit.flag;
@@ -53,11 +52,19 @@ module.exports = function (SocketPosts) {
 			can: results.canFlag.flag,
 			exists: !!results.posts.flagId,
 			flagged: results.flagged,
+			state: await db.getObjectField(`flag:${postData.flagId}`, 'state'),
 		};
 
 		if (!results.isAdmin && !results.canViewInfo) {
 			postData.ip = undefined;
 		}
+		const tools = await plugins.hooks.fire('filter:post.tools', {
+			pid: data.pid,
+			post: postData,
+			uid: socket.uid,
+			tools: [],
+		});
+		postData.tools = tools.tools;
 		return results;
 	};
 
@@ -103,8 +110,8 @@ module.exports = function (SocketPosts) {
 			throw new Error('[[error:no-privileges]]');
 		}
 
-		var postData = await posts.changeOwner(data.pids, data.toUid);
-		var logs = postData.map(({ pid, uid, cid }) => (events.log({
+		const postData = await posts.changeOwner(data.pids, data.toUid);
+		const logs = postData.map(({ pid, uid, cid }) => (events.log({
 			type: 'post-change-owner',
 			uid: socket.uid,
 			ip: socket.ip,

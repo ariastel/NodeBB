@@ -40,8 +40,12 @@ require('./online')(User);
 require('./blocks')(User);
 require('./uploads')(User);
 
-User.exists = async function (uid) {
-	return await db.isSortedSetMember('users:joindate', uid);
+User.exists = async function (uids) {
+	return await (
+		Array.isArray(uids) ?
+			db.isSortedSetMembers('users:joindate', uids) :
+			db.isSortedSetMember('users:joindate', uids)
+	);
 };
 
 User.existsBySlug = async function (userslug) {
@@ -191,7 +195,7 @@ async function isSelfOrMethod(callerUid, uid, method) {
 
 User.getAdminsandGlobalMods = async function () {
 	const results = await groups.getMembersOfGroups(['administrators', 'Global Moderators']);
-	return await User.getUsersData(_.union.apply(_, results));
+	return await User.getUsersData(_.union(...results));
 };
 
 User.getAdminsandGlobalModsandModerators = async function () {
@@ -200,7 +204,7 @@ User.getAdminsandGlobalModsandModerators = async function () {
 		groups.getMembers('Global Moderators', 0, -1),
 		User.getModeratorUids(),
 	]);
-	return await User.getUsersData(_.union.apply(_, results));
+	return await User.getUsersData(_.union(...results));
 };
 
 User.getModeratorUids = async function () {
@@ -232,7 +236,7 @@ User.addInterstitials = function (callback) {
 				}
 
 				if (data.userData.uid) {
-					const consented = await db.getObjectField('user:' + data.userData.uid, 'gdpr_consent');
+					const consented = await db.getObjectField(`user:${data.userData.uid}`, 'gdpr_consent');
 					if (parseInt(consented, 10)) {
 						return data;
 					}
@@ -269,7 +273,7 @@ User.addInterstitials = function (callback) {
 				}
 
 				if (data.userData.uid) {
-					const accepted = await db.getObjectField('user:' + data.userData.uid, 'acceptTos');
+					const accepted = await db.getObjectField(`user:${data.userData.uid}`, 'acceptTos');
 					if (parseInt(accepted, 10)) {
 						return data;
 					}

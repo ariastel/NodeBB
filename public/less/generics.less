@@ -77,6 +77,7 @@
 	font-weight: normal;
 	vertical-align: middle;
 	overflow: hidden;	/* stops alt text from overflowing past boundaries if image does not load */
+	white-space: nowrap;
 
 	&:before {
 		content: '';
@@ -161,4 +162,14 @@
 	margin-bottom: 20px;
 	text-align: center;
 	text-transform: uppercase;
+}
+
+.timeline-event {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	.timeline-badge {
+		padding: 1rem;
+	}
 }

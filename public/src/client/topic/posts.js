@@ -13,15 +13,20 @@ define('forum/topic/posts', [
 	var Posts = { };
 
 	Posts.onNewPost = function (data) {
-		if (!data || !data.posts || !data.posts.length || parseInt(data.posts[0].tid, 10) !== parseInt(ajaxify.data.tid, 10)) {
+		if (
+			!data ||
+			!data.posts ||
+			!data.posts.length ||
+			parseInt(data.posts[0].tid, 10) !== parseInt(ajaxify.data.tid, 10)
+		) {
 			return;
 		}
 
 		data.loggedIn = !!app.user.uid;
 		data.privileges = ajaxify.data.privileges;
 
-		// prevent timeago in future by setting timestamp to 1 sec behind now
-		data.posts[0].timestamp = Date.now() - 1000;
+		// if not a scheduled topic, prevent timeago in future by setting timestamp to 1 sec behind now
+		data.posts[0].timestamp = data.posts[0].topic.scheduled ? data.posts[0].timestamp : Date.now() - 1000;
 		data.posts[0].timestampISO = utils.toISOString(data.posts[0].timestamp);
 
 		Posts.modifyPostsByPrivileges(data.posts);
@@ -88,11 +93,13 @@ define('forum/topic/posts', [
 		ajaxify.data.pagination.pageCount = Math.max(1, Math.ceil(posts[0].topic.postcount / config.postsPerPage));
 		var direction = config.topicPostSort === 'oldest_to_newest' || config.topicPostSort === 'most_votes' ? 1 : -1;
 
-		var isPostVisible = (ajaxify.data.pagination.currentPage === ajaxify.data.pagination.pageCount && direction === 1) ||
-							(ajaxify.data.pagination.currentPage === 1 && direction === -1);
+		var isPostVisible = (
+			ajaxify.data.pagination.currentPage === ajaxify.data.pagination.pageCount &&
+			direction === 1
+		) || (ajaxify.data.pagination.currentPage === 1 && direction === -1);
 
 		if (isPostVisible) {
-			createNewPosts(data, components.get('post').not('[data-index=0]'), direction, scrollToPost);
+			createNewPosts(data, components.get('post').not('[data-index=0]'), direction, false, scrollToPost);
 		} else if (ajaxify.data.scrollToMyPost && parseInt(posts[0].uid, 10) === parseInt(app.user.uid, 10)) {
 			// https://github.com/NodeBB/NodeBB/issues/5004#issuecomment-247157441
 			setTimeout(function () {
@@ -112,7 +119,7 @@ define('forum/topic/posts', [
 	}
 
 	function onNewPostInfiniteScroll(data) {
-		var direction = config.topicPostSort === 'oldest_to_newest' || config.topicPostSort === 'most_votes' ? 1 : -1;
+		var direction = (config.topicPostSort === 'oldest_to_newest' || config.topicPostSort === 'most_votes') ? 1 : -1;
 
 		var isPreviousPostAdded = $('[component="post"][data-index="' + (data.posts[0].index - 1) + '"]').length;
 		if (!isPreviousPostAdded && (!data.posts[0].selfPost || !ajaxify.data.scrollToMyPost)) {
@@ -123,7 +130,7 @@ define('forum/topic/posts', [
 			return ajaxify.go('post/' + data.posts[0].pid);
 		}
 
-		createNewPosts(data, components.get('post').not('[data-index=0]'), direction, function (html) {
+		createNewPosts(data, components.get('post').not('[data-index=0]'), direction, false, function (html) {
 			if (html) {
 				html.addClass('new');
 			}
@@ -137,7 +144,7 @@ define('forum/topic/posts', [
 		}
 	}
 
-	function createNewPosts(data, repliesSelector, direction, callback) {
+	function createNewPosts(data, repliesSelector, direction, userScrolled, callback) {
 		callback = callback || function () {};
 		if (!data || (data.posts && !data.posts.length)) {
 			return callback();
@@ -210,7 +217,7 @@ define('forum/topic/posts', [
 				html.insertBefore(before);
 
 				// Now restore the relative position the user was on prior to new post insertion
-				if (scrollTop > 0) {
+				if (userScrolled || scrollTop > 0) {
 					$(window).scrollTop(scrollTop + ($(document).height() - height));
 				}
 			} else {
@@ -256,7 +263,7 @@ define('forum/topic/posts', [
 			indicatorEl.fadeOut();
 
 			if (data && data.posts && data.posts.length) {
-				createNewPosts(data, replies, direction, done);
+				createNewPosts(data, replies, direction, true, done);
 			} else {
 				navigator.update();
 				done();
@@ -271,7 +278,58 @@ define('forum/topic/posts', [
 		posts.find('[component="post/content"] img:not(.not-responsive)').addClass('img-responsive');
 		Posts.addBlockquoteEllipses(posts);
 		hidePostToolsForDeletedPosts(posts);
+		Posts.addTopicEvents();
 		addNecroPostMessage();
+	};
+
+	Posts.addTopicEvents = function (events) {
+		events = events || ajaxify.data.events;
+		if (!events || !Array.isArray(events)) {
+			return;
+		}
+
+		if (config.topicPostSort !== 'newest_to_oldest' && config.topicPostSort !== 'oldest_to_newest') {
+			return;
+		}
+
+		// Filter out events already in DOM
+		const eventIdsInDOM = Array.from(document.querySelectorAll('[component="topic/event"]')).map(el => parseInt(el.getAttribute('data-topic-event-id'), 10));
+		events = events.filter(event => !eventIdsInDOM.includes(event.id));
+
+		let postTimestamps = ajaxify.data.posts.map(post => post.timestamp);
+
+		const reverse = config.topicPostSort === 'newest_to_oldest';
+		events = events.slice(0);
+		if (reverse) {
+			events.reverse();
+			postTimestamps = postTimestamps.slice(1);	// OP is always at top, so exclude from calculations
+		}
+
+		Promise.all(events.map((event) => {
+			const beforeIdx = postTimestamps.findIndex(
+				timestamp => (reverse ? (timestamp < event.timestamp) : (timestamp > event.timestamp))
+			);
+			let postEl;
+			if (beforeIdx > -1) {
+				postEl = document.querySelector(`[component="post"][data-pid="${ajaxify.data.posts[beforeIdx + (reverse ? 1 : 0)].pid}"]`);
+			}
+
+			return new Promise((resolve) => {
+				app.parseAndTranslate('partials/topic/event', event, function (html) {
+					html = html.get(0);
+
+					if (postEl) {
+						document.querySelector('[component="topic"]').insertBefore(html, postEl);
+					} else {
+						document.querySelector('[component="topic"]').append(html);
+					}
+
+					resolve();
+				});
+			});
+		})).then(() => {
+			$('[component="topic/event"] .timeago').timeago();
+		});
 	};
 
 	function addNecroPostMessage() {

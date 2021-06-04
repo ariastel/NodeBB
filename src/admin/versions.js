@@ -12,7 +12,7 @@ const isPrerelease = /^v?\d+\.\d+\.\d+-.+$/;
 function getLatestVersion(callback) {
 	const headers = {
 		Accept: 'application/vnd.github.v3+json',
-		'User-Agent': encodeURIComponent('NodeBB Admin Control Panel/' + meta.config.title),
+		'User-Agent': encodeURIComponent(`NodeBB Admin Control Panel/${meta.config.title}`),
 	};
 
 	if (versionCacheLastModified) {
@@ -23,7 +23,7 @@ function getLatestVersion(callback) {
 		json: true,
 		headers: headers,
 		timeout: 2000,
-	}, function (err, res, latestRelease) {
+	}, (err, res, latestRelease) => {
 		if (err) {
 			return callback(err);
 		}

@@ -5,6 +5,10 @@ define('forum/topic/images', [], function () {
 	var Images = {};
 
 	Images.wrapImagesInLinks = function (posts) {
+		if (!config.openOutgoingImageLinksInNewTab) {
+			return;
+		}
+
 		posts.find('[component="post/content"] img:not(.emoji)').each(function () {
 			var $this = $(this);
 			var src = $this.attr('src') || '';
@@ -23,9 +27,14 @@ define('forum/topic/images', [], function () {
 			var altExt = altFilename.split('.').slice(1).pop();
 
 			if (!$this.parent().is('a')) {
-				$this.wrap('<a href="' + src + '" ' +
-					(!srcExt && altExt ? ' download="' + altFilename + '" ' : '') +
-					' target="_blank" rel="noopener">');
+				var tag = '<a href="' + src + '" ' +
+					(!srcExt && altExt ?
+						' download="' + altFilename + '" ' :
+						'') +
+					(config.openOutgoingLinksInNewTab ?
+						' target="_blank" rel="noopener">' :
+						' >');
+				$this.wrap(tag);
 			}
 		});
 	};

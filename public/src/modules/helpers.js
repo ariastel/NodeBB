@@ -159,6 +159,10 @@
 			style.push('unread');
 		}
 
+		if (topic.scheduled) {
+			style.push('scheduled');
+		}
+
 		return style.join(' ');
 	}
 
@@ -287,6 +291,11 @@
 		 * classNames: additional class names to prepend (optional, default none)
 		 * component: overrides the default component (optional, default none)
 		 */
+
+		// Try to use root context if passed-in userObj is undefined
+		if (!userObj) {
+			userObj = this;
+		}
 
 		var attributes = [
 			'alt="' + userObj.username + '"',
