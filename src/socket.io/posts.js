@@ -6,13 +6,15 @@ const privileges = require('../privileges');
 const plugins = require('../plugins');
 const meta = require('../meta');
 const topics = require('../topics');
-const categories = require('../categories');
 const user = require('../user');
+const notifications = require('../notifications');
 const socketHelpers = require('./helpers');
 const utils = require('../utils');
 const api = require('../api');
+const apiHelpers = require('../api/helpers');
 
 const sockets = require('.');
+
 const SocketPosts = module.exports;
 
 require('./posts/edit')(SocketPosts);
@@ -29,7 +31,7 @@ SocketPosts.reply = async function (socket, data) {
 		throw new Error('[[error:invalid-data]]');
 	}
 
-	socketHelpers.setDefaultPostData(data, socket);
+	apiHelpers.setDefaultPostData(socket, data);
 	await meta.blacklist.test(data.req.ip);
 	const shouldQueue = await posts.shouldQueue(socket.uid, data);
 	if (shouldQueue) {
@@ -78,7 +80,7 @@ SocketPosts.getPostSummaryByIndex = async function (socket, data) {
 	if (data.index === 0) {
 		pid = await topics.getTopicField(data.tid, 'mainPid');
 	} else {
-		pid = await db.getSortedSetRange('tid:' + data.tid + ':posts', data.index - 1, data.index - 1);
+		pid = await db.getSortedSetRange(`tid:${data.tid}:posts`, data.index - 1, data.index - 1);
 	}
 	pid = Array.isArray(pid) ? pid[0] : pid;
 	if (!pid) {
@@ -100,41 +102,6 @@ SocketPosts.getPost = async function (socket, pid) {
 	return await api.posts.get(socket, { pid });
 };
 
-SocketPosts.loadMoreBookmarks = async function (socket, data) {
-	return await loadMorePosts('uid:' + data.uid + ':bookmarks', socket.uid, data);
-};
-
-SocketPosts.loadMoreUserPosts = async function (socket, data) {
-	const cids = await categories.getCidsByPrivilege('categories:cid', socket.uid, 'topics:read');
-	const keys = cids.map(c => 'cid:' + c + ':uid:' + data.uid + ':pids');
-	return await loadMorePosts(keys, socket.uid, data);
-};
-
-SocketPosts.loadMoreBestPosts = async function (socket, data) {
-	const cids = await categories.getCidsByPrivilege('categories:cid', socket.uid, 'topics:read');
-	const keys = cids.map(c => 'cid:' + c + ':uid:' + data.uid + ':pids:votes');
-	return await loadMorePosts(keys, socket.uid, data);
-};
-
-SocketPosts.loadMoreUpVotedPosts = async function (socket, data) {
-	return await loadMorePosts('uid:' + data.uid + ':upvote', socket.uid, data);
-};
-
-SocketPosts.loadMoreDownVotedPosts = async function (socket, data) {
-	return await loadMorePosts('uid:' + data.uid + ':downvote', socket.uid, data);
-};
-
-async function loadMorePosts(set, uid, data) {
-	if (!data || !utils.isNumber(data.uid) || !utils.isNumber(data.after)) {
-		throw new Error('[[error:invalid-data]]');
-	}
-
-	const start = Math.max(0, parseInt(data.after, 10));
-	const stop = start + 9;
-
-	return await posts.getPostSummariesFromSet(set, uid, start, stop);
-}
-
 SocketPosts.getCategory = async function (socket, pid) {
 	return await posts.getCidByPid(pid);
 };
@@ -150,10 +117,10 @@ SocketPosts.getReplies = async function (socket, pid) {
 	if (!utils.isNumber(pid)) {
 		throw new Error('[[error:invalid-data]]');
 	}
+	const { topicPostSort } = await user.getSettings(socket.uid);
+	const pids = await posts.getPidsFromSet(`pid:${pid}:replies`, 0, -1, topicPostSort === 'newest_to_oldest');
 
-	const pids = await posts.getPidsFromSet('pid:' + pid + ':replies', 0, -1, false);
-
-	var [postData, postPrivileges] = await Promise.all([
+	let [postData, postPrivileges] = await Promise.all([
 		posts.getPostsByPids(pids, socket.uid),
 		privileges.posts.get(pids, socket.uid),
 	]);
@@ -164,11 +131,13 @@ SocketPosts.getReplies = async function (socket, pid) {
 };
 
 SocketPosts.accept = async function (socket, data) {
-	await acceptOrReject(posts.submitFromQueue, socket, data);
+	const result = await acceptOrReject(posts.submitFromQueue, socket, data);
+	await sendQueueNotification('post-queue-accepted', result.uid, `/post/${result.pid}`);
 };
 
 SocketPosts.reject = async function (socket, data) {
-	await acceptOrReject(posts.removeFromQueue, socket, data);
+	const result = await acceptOrReject(posts.removeFromQueue, socket, data);
+	await sendQueueNotification('post-queue-rejected', result.uid, '/');
 };
 
 async function acceptOrReject(method, socket, data) {
@@ -176,7 +145,18 @@ async function acceptOrReject(method, socket, data) {
 	if (!canEditQueue) {
 		throw new Error('[[error:no-privileges]]');
 	}
-	await method(data.id);
+	return await method(data.id);
+}
+
+async function sendQueueNotification(type, targetUid, path) {
+	const notifObj = await notifications.create({
+		type: type,
+		nid: `${type}-${targetUid}-${path}`,
+		bodyShort: type === 'post-queue-accepted' ?
+			'[[notifications:post-queue-accepted]]' : '[[notifications:post-queue-rejected]]',
+		path: path,
+	});
+	await notifications.push(notifObj, [targetUid]);
 }
 
 SocketPosts.editQueuedContent = async function (socket, data) {

@@ -36,29 +36,36 @@ module.exports = function (User) {
 
 		const now = Date.now();
 		if (now - userData.joindate < meta.config.initialPostDelay * 1000) {
-			throw new Error('[[error:user-too-new, ' + meta.config.initialPostDelay + ']]');
+			throw new Error(`[[error:user-too-new, ${meta.config.initialPostDelay}]]`);
 		}
 
 		const lasttime = userData[field] || 0;
 
-		if (meta.config.newbiePostDelay > 0 && meta.config.newbiePostDelayThreshold > userData.reputation && now - lasttime < meta.config.newbiePostDelay * 1000) {
-			throw new Error('[[error:too-many-posts-newbie, ' + meta.config.newbiePostDelay + ', ' + meta.config.newbiePostDelayThreshold + ']]');
+		if (
+			meta.config.newbiePostDelay > 0 &&
+			meta.config.newbiePostDelayThreshold > userData.reputation &&
+			now - lasttime < meta.config.newbiePostDelay * 1000
+		) {
+			throw new Error(`[[error:too-many-posts-newbie, ${meta.config.newbiePostDelay}, ${meta.config.newbiePostDelayThreshold}]]`);
 		} else if (now - lasttime < meta.config.postDelay * 1000) {
-			throw new Error('[[error:too-many-posts, ' + meta.config.postDelay + ']]');
+			throw new Error(`[[error:too-many-posts, ${meta.config.postDelay}]]`);
 		}
 	}
 
 	User.onNewPostMade = async function (postData) {
+		// For scheduled posts, use "action" time. It'll be updated in related cron job when post is published
+		const lastposttime = postData.timestamp > Date.now() ? Date.now() : postData.timestamp;
+
 		await User.addPostIdToUser(postData);
 		await User.incrementUserPostCountBy(postData.uid, 1);
-		await User.setUserField(postData.uid, 'lastposttime', postData.timestamp);
+		await User.setUserField(postData.uid, 'lastposttime', lastposttime);
 		await User.updateLastOnlineTime(postData.uid);
 	};
 
 	User.addPostIdToUser = async function (postData) {
 		await db.sortedSetsAdd([
-			'uid:' + postData.uid + ':posts',
-			'cid:' + postData.cid + ':uid:' + postData.uid + ':pids',
+			`uid:${postData.uid}:posts`,
+			`cid:${postData.cid}:uid:${postData.uid}:pids`,
 		], postData.timestamp, postData.pid);
 	};
 
@@ -89,7 +96,7 @@ module.exports = function (User) {
 	}
 
 	User.getPostIds = async function (uid, start, stop) {
-		const pids = await db.getSortedSetRevRange('uid:' + uid + ':posts', start, stop);
+		const pids = await db.getSortedSetRevRange(`uid:${uid}:posts`, start, stop);
 		return Array.isArray(pids) ? pids : [];
 	};
 };

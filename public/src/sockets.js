@@ -70,12 +70,17 @@ socket = window.socket;
 				.find('p')
 				.translateText('[[error:socket-reconnect-failed]]')
 				.one('click', app.reconnect);
+
+			$(window).one('focus', app.reconnect);
 		});
 
 		socket.on('checkSession', function (uid) {
 			if (parseInt(uid, 10) !== parseInt(app.user.uid, 10)) {
-				app.handleInvalidSession();
+				app.handleSessionMismatch();
 			}
+		});
+		socket.on('event:invalid_session', () => {
+			app.handleInvalidSession();
 		});
 
 		socket.on('setHostname', function (hostname) {
@@ -83,6 +88,7 @@ socket = window.socket;
 		});
 
 		socket.on('event:banned', onEventBanned);
+		socket.on('event:unbanned', onEventUnbanned);
 		socket.on('event:logout', function () {
 			app.logout();
 		});
@@ -127,7 +133,7 @@ socket = window.socket;
 
 			reconnectEl.tooltip('destroy');
 			reconnectEl.html('<i class="fa fa-check text-success"></i>');
-			reconnectAlert.fadeOut(500);
+			reconnectAlert.addClass('hide');
 			reconnecting = false;
 
 			reJoinCurrentRoom();
@@ -183,7 +189,7 @@ socket = window.socket;
 
 		if (!reconnectEl.hasClass('active')) {
 			reconnectEl.html('<i class="fa fa-spinner fa-spin"></i>');
-			reconnectAlert.fadeIn(500).removeClass('hide');
+			reconnectAlert.removeClass('hide');
 		}
 
 		reconnectEl.addClass('active').removeClass('hide').tooltip({
@@ -207,6 +213,17 @@ socket = window.socket;
 		bootbox.alert({
 			title: '[[error:user-banned]]',
 			message: message,
+			closeButton: false,
+			callback: function () {
+				window.location.href = config.relative_path + '/';
+			},
+		});
+	}
+
+	function onEventUnbanned() {
+		bootbox.alert({
+			title: '[[global:alert.unbanned]]',
+			message: '[[global:alert.unbanned.message]]',
 			closeButton: false,
 			callback: function () {
 				window.location.href = config.relative_path + '/';

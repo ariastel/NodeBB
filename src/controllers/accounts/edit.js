@@ -12,7 +12,7 @@ const editController = module.exports;
 
 editController.get = async function (req, res, next) {
 	const [userData, canUseSignature] = await Promise.all([
-		accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid),
+		accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid, req.query),
 		privileges.global.can('signature', req.uid),
 	]);
 	if (!userData) {
@@ -24,7 +24,7 @@ editController.get = async function (req, res, next) {
 	userData.allowProfilePicture = !userData.isSelf || !!meta.config['reputation:disabled'] || userData.reputation >= meta.config['min:rep:profile-picture'];
 	userData.allowCoverPicture = !userData.isSelf || !!meta.config['reputation:disabled'] || userData.reputation >= meta.config['min:rep:cover-picture'];
 	userData.allowProfileImageUploads = meta.config.allowProfileImageUploads;
-	userData.allowedProfileImageExtensions = user.getAllowedProfileImageExtensions().map(ext => '.' + ext).join(', ');
+	userData.allowedProfileImageExtensions = user.getAllowedProfileImageExtensions().map(ext => `.${ext}`).join(', ');
 	userData.allowMultipleBadges = meta.config.allowMultipleBadges === 1;
 	userData.allowAccountDelete = meta.config.allowAccountDelete === 1;
 	userData.allowWebsite = !userData.isSelf || !!meta.config['reputation:disabled'] || userData.reputation >= meta.config['min:rep:website'];
@@ -49,17 +49,17 @@ editController.get = async function (req, res, next) {
 		}
 		return i1 - i2;
 	});
-	userData.groups.forEach(function (group) {
+	userData.groups.forEach((group) => {
 		group.userTitle = group.userTitle || group.displayName;
 		group.selected = userData.groupTitleArray.includes(group.name);
 	});
 	userData.groupSelectSize = Math.min(10, Math.max(5, userData.groups.length + 1));
 
-	userData.title = '[[pages:account/edit, ' + userData.username + ']]';
+	userData.title = `[[pages:account/edit, ${userData.username}]]`;
 	userData.breadcrumbs = helpers.buildBreadcrumbs([
 		{
 			text: userData.username,
-			url: '/user/' + userData.userslug,
+			url: `/user/${userData.userslug}`,
 		},
 		{
 			text: '[[user:edit]]',
@@ -86,7 +86,7 @@ async function renderRoute(name, req, res, next) {
 	if (!userData) {
 		return next();
 	}
-	if (meta.config[name + ':disableEdit'] && !userData.isAdmin) {
+	if (meta.config[`${name}:disableEdit`] && !userData.isAdmin) {
 		return helpers.notAllowed(req, res);
 	}
 
@@ -95,26 +95,26 @@ async function renderRoute(name, req, res, next) {
 		userData.minimumPasswordStrength = meta.config.minimumPasswordStrength;
 	}
 
-	userData.title = '[[pages:account/edit/' + name + ', ' + userData.username + ']]';
+	userData.title = `[[pages:account/edit/${name}, ${userData.username}]]`;
 	userData.breadcrumbs = helpers.buildBreadcrumbs([
 		{
 			text: userData.username,
-			url: '/user/' + userData.userslug,
+			url: `/user/${userData.userslug}`,
 		},
 		{
 			text: '[[user:edit]]',
-			url: '/user/' + userData.userslug + '/edit',
+			url: `/user/${userData.userslug}/edit`,
 		},
 		{
-			text: '[[user:' + name + ']]',
+			text: `[[user:${name}]]`,
 		},
 	]);
 
-	res.render('account/edit/' + name, userData);
+	res.render(`account/edit/${name}`, userData);
 }
 
 async function getUserData(req) {
-	const userData = await accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid);
+	const userData = await accountHelpers.getUserDataByUserSlug(req.params.userslug, req.uid, req.query);
 	if (!userData) {
 		return null;
 	}
@@ -134,6 +134,7 @@ editController.uploadPicture = async function (req, res, next) {
 		await user.checkMinReputation(req.uid, updateUid, 'min:rep:profile-picture');
 
 		const image = await user.uploadCroppedPictureFile({
+			callerUid: req.uid,
 			uid: updateUid,
 			file: userPhoto,
 		});

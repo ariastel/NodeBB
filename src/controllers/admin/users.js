@@ -92,27 +92,11 @@ async function getUsers(req, res) {
 		return uids;
 	}
 
-	async function getUsersWithFields(set) {
-		const uids = await getUids(set);
-		const [isAdmin, userData, lastonline] = await Promise.all([
-			user.isAdministrator(uids),
-			user.getUsersWithFields(uids, userFields, req.uid),
-			db.sortedSetScores('users:online', uids),
-		]);
-		userData.forEach((user, index) => {
-			if (user) {
-				user.administrator = isAdmin[index];
-				const timestamp = lastonline[index] || user.joindate;
-				user.lastonline = timestamp;
-				user.lastonlineISO = utils.toISOString(timestamp);
-			}
-		});
-		return userData;
-	}
 	const set = buildSet();
+	const uids = await getUids(set);
 	const [count, users] = await Promise.all([
 		getCount(set),
-		getUsersWithFields(set),
+		loadUserInfo(req.uid, uids),
 	]);
 
 	await render(req, res, {
@@ -153,7 +137,7 @@ usersController.search = async function (req, res) {
 			}
 
 			const data = await db.getSortedSetScan({
-				key: searchBy + ':sorted',
+				key: `${searchBy}:sorted`,
 				match: query,
 				limit: hardCap || (resultsPerPage * 10),
 			});
@@ -162,22 +146,32 @@ usersController.search = async function (req, res) {
 	});
 
 	const uids = searchData.users.map(user => user && user.uid);
-	const userInfo = await user.getUsersFields(uids, ['email', 'flags', 'lastonline', 'joindate']);
+	searchData.users = await loadUserInfo(req.uid, uids);
 
-	searchData.users.forEach(function (user, index) {
-		if (user && userInfo[index]) {
-			user.email = userInfo[index].email;
-			user.flags = userInfo[index].flags || 0;
-			user.lastonlineISO = userInfo[index].lastonlineISO;
-			user.joindateISO = userInfo[index].joindateISO;
-		}
-	});
 	searchData.query = validator.escape(String(req.query.query || ''));
 	searchData.resultsPerPage = resultsPerPage;
 	searchData.sortBy = req.query.sortBy;
 	searchData.reverse = reverse;
 	await render(req, res, searchData);
 };
+
+async function loadUserInfo(callerUid, uids) {
+	const [isAdmin, userData, lastonline] = await Promise.all([
+		user.isAdministrator(uids),
+		user.getUsersWithFields(uids, userFields, callerUid),
+		db.sortedSetScores('users:online', uids),
+	]);
+	userData.forEach((user, index) => {
+		if (user) {
+			user.administrator = isAdmin[index];
+			user.flags = userData[index].flags || 0;
+			const timestamp = lastonline[index] || user.joindate;
+			user.lastonline = timestamp;
+			user.lastonlineISO = utils.toISOString(timestamp);
+		}
+	});
+	return userData;
+}
 
 usersController.registrationQueue = async function (req, res) {
 	const page = parseInt(req.query.page, 10) || 1;
@@ -191,7 +185,7 @@ usersController.registrationQueue = async function (req, res) {
 		customHeaders: plugins.hooks.fire('filter:admin.registrationQueue.customHeaders', { headers: [] }),
 		invites: getInvites(),
 	});
-	var pageCount = Math.max(1, Math.ceil(data.registrationQueueCount / itemsPerPage));
+	const pageCount = Math.max(1, Math.ceil(data.registrationQueueCount / itemsPerPage));
 	data.pagination = pagination.create(page, pageCount);
 	data.customHeaders = data.customHeaders.headers;
 	res.render('admin/manage/registration', data);
@@ -203,7 +197,7 @@ async function getInvites() {
 	let usernames = await user.getUsersFields(uids, ['username']);
 	usernames = usernames.map(user => user.username);
 
-	invitations.forEach(function (invites, index) {
+	invitations.forEach((invites, index) => {
 		invites.username = usernames[index];
 	});
 
@@ -215,13 +209,11 @@ async function getInvites() {
 
 	usernames = await Promise.all(invitations.map(invites => getUsernamesByEmails(invites.invitations)));
 
-	invitations.forEach(function (invites, index) {
-		invites.invitations = invites.invitations.map(function (email, i) {
-			return {
-				email: email,
-				username: usernames[index][i] === '[[global:guest]]' ? '' : usernames[index][i],
-			};
-		});
+	invitations.forEach((invites, index) => {
+		invites.invitations = invites.invitations.map((email, i) => ({
+			email: email,
+			username: usernames[index][i] === '[[global:guest]]' ? '' : usernames[index][i],
+		}));
 	});
 	return invitations;
 }
@@ -229,17 +221,17 @@ async function getInvites() {
 async function render(req, res, data) {
 	data.pagination = pagination.create(data.page, data.pageCount, req.query);
 
-	const registrationType = meta.config.registrationType;
+	const { registrationType } = meta.config;
 
 	data.inviteOnly = registrationType === 'invite-only' || registrationType === 'admin-invite-only';
 	data.adminInviteOnly = registrationType === 'admin-invite-only';
-	data['sort_' + data.sortBy] = true;
+	data[`sort_${data.sortBy}`] = true;
 	if (req.query.searchBy) {
-		data['searchBy_' + validator.escape(String(req.query.searchBy))] = true;
+		data[`searchBy_${validator.escape(String(req.query.searchBy))}`] = true;
 	}
 	const filterBy = Array.isArray(req.query.filters || []) ? (req.query.filters || []) : [req.query.filters];
-	filterBy.forEach(function (filter) {
-		data['filterBy_' + validator.escape(String(filter))] = true;
+	filterBy.forEach((filter) => {
+		data[`filterBy_${validator.escape(String(filter))}`] = true;
 	});
 	data.userCount = parseInt(await db.getObjectField('global', 'userCount'), 10);
 	if (data.adminInviteOnly) {
@@ -265,7 +257,7 @@ usersController.getCSV = async function (req, res, next) {
 			'Content-Type': 'text/csv',
 			'Content-Disposition': 'attachment; filename=users.csv',
 		},
-	}, function (err) {
+	}, (err) => {
 		if (err) {
 			if (err.code === 'ENOENT') {
 				res.locals.isAPI = false;

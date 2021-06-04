@@ -6,6 +6,12 @@ const plugins = require('../plugins');
 module.exports = function (Topics) {
 	Topics.merge = async function (tids, uid, options) {
 		options = options || {};
+
+		const topicsData = await Topics.getTopicsFields(tids, ['scheduled']);
+		if (topicsData.some(t => t.scheduled)) {
+			throw new Error('[[error:cant-merge-scheduled]]');
+		}
+
 		const oldestTid = findOldestTopic(tids);
 		let mergeIntoTid = oldestTid;
 		if (options.mainTid) {
@@ -17,9 +23,9 @@ module.exports = function (Topics) {
 		const otherTids = tids.sort((a, b) => a - b)
 			.filter(tid => tid && parseInt(tid, 10) !== parseInt(mergeIntoTid, 10));
 
-		await async.eachSeries(otherTids, async function (tid) {
+		await async.eachSeries(otherTids, async (tid) => {
 			const pids = await Topics.getPids(tid);
-			await async.eachSeries(pids, function (pid, next) {
+			await async.eachSeries(pids, (pid, next) => {
 				Topics.movePostToTopic(uid, pid, mergeIntoTid, next);
 			});
 

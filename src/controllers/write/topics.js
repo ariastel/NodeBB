@@ -130,8 +130,7 @@ Topics.addThumb = async (req, res) => {
 		await Promise.all(files.map(async (fileObj) => {
 			await topics.thumbs.associate({
 				id: req.params.tid,
-				path: fileObj.path || null,
-				url: fileObj.url,
+				path: fileObj.path || fileObj.url,
 			});
 		}));
 	}
@@ -152,7 +151,7 @@ Topics.migrateThumbs = async (req, res) => {
 
 Topics.deleteThumb = async (req, res) => {
 	if (!req.body.path.startsWith('http')) {
-		await middleware.assert.path(req, res, function () {});
+		await middleware.assert.path(req, res, () => {});
 		if (res.headersSent) {
 			return;
 		}
@@ -167,8 +166,28 @@ Topics.deleteThumb = async (req, res) => {
 	helpers.formatApiResponse(200, res, await topics.thumbs.get(req.params.tid));
 };
 
+Topics.reorderThumbs = async (req, res) => {
+	await checkThumbPrivileges({ tid: req.params.tid, uid: req.user.uid, res });
+	if (res.headersSent) {
+		return;
+	}
+
+	const exists = await topics.thumbs.exists(req.params.tid, req.body.path);
+	if (!exists) {
+		return helpers.formatApiResponse(404, res);
+	}
+
+	await topics.thumbs.associate({
+		id: req.params.tid,
+		path: req.body.path,
+		score: req.body.order,
+	});
+	helpers.formatApiResponse(200, res);
+};
+
 async function checkThumbPrivileges({ tid, uid, res }) {
-	// req.params.tid could be either a tid (pushing a new thumb to an existing topic) or a post UUID (a new topic being composed)
+	// req.params.tid could be either a tid (pushing a new thumb to an existing topic)
+	// or a post UUID (a new topic being composed)
 	const isUUID = validator.isUUID(tid);
 
 	// Sanity-check the tid if it's strictly not a uuid
@@ -181,3 +200,11 @@ async function checkThumbPrivileges({ tid, uid, res }) {
 		return helpers.formatApiResponse(403, res, new Error('[[error:no-privileges]]'));
 	}
 }
+
+Topics.getEvents = async (req, res) => {
+	if (!await privileges.topics.can('topics:read', req.params.tid, req.uid)) {
+		return helpers.formatApiResponse(403, res);
+	}
+
+	helpers.formatApiResponse(200, res, await topics.events.get(req.params.tid));
+};

@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = function (module) {
-	var helpers = require('./helpers');
+	const helpers = require('./helpers');
 
 	module.setObject = async function (key, data) {
 		if (!key || !data) {
@@ -12,7 +12,7 @@ module.exports = function (module) {
 			delete data[''];
 		}
 
-		await module.transaction(async function (client) {
+		await module.transaction(async (client) => {
 			const dataString = JSON.stringify(data);
 			async function setOne(key) {
 				await helpers.ensureLegacyObjectType(client, key, 'hash');
@@ -34,12 +34,20 @@ module.exports = function (module) {
 		});
 	};
 
+	module.setObjectBulk = async function (keys, data) {
+		if (!keys.length || !data.length) {
+			return;
+		}
+		// TODO: single query?
+		await Promise.all(keys.map((k, i) => module.setObject(k, data[i])));
+	};
+
 	module.setObjectField = async function (key, field, value) {
 		if (!field) {
 			return;
 		}
 
-		await module.transaction(async function (client) {
+		await module.transaction(async (client) => {
 			const valueString = JSON.stringify(value);
 			async function setOne(key) {
 				await helpers.ensureLegacyObjectType(client, key, 'hash');
@@ -62,11 +70,13 @@ module.exports = function (module) {
 		});
 	};
 
-	module.getObject = async function (key) {
+	module.getObject = async function (key, fields = []) {
 		if (!key) {
 			return null;
 		}
-
+		if (fields.length) {
+			return await module.getObjectFields(key, fields);
+		}
 		const res = await module.pool.query({
 			name: 'getObject',
 			text: `
@@ -83,11 +93,13 @@ SELECT h."data"
 		return res.rows.length ? res.rows[0].data : null;
 	};
 
-	module.getObjects = async function (keys) {
+	module.getObjects = async function (keys, fields = []) {
 		if (!Array.isArray(keys) || !keys.length) {
 			return [];
 		}
-
+		if (fields.length) {
+			return await module.getObjectsFields(keys, fields);
+		}
 		const res = await module.pool.query({
 			name: 'getObjects',
 			text: `
@@ -130,7 +142,9 @@ SELECT h."data"->>$2::TEXT f
 		if (!key) {
 			return null;
 		}
-
+		if (!Array.isArray(fields) || !fields.length) {
+			return await module.getObject(key);
+		}
 		const res = await module.pool.query({
 			name: 'getObjectFields',
 			text: `
@@ -150,8 +164,8 @@ SELECT (SELECT jsonb_object_agg(f, d."value")
 			return res.rows[0].d;
 		}
 
-		var obj = {};
-		fields.forEach(function (f) {
+		const obj = {};
+		fields.forEach((f) => {
 			obj[f] = null;
 		});
 
@@ -163,6 +177,9 @@ SELECT (SELECT jsonb_object_agg(f, d."value")
 			return [];
 		}
 
+		if (!Array.isArray(fields) || !fields.length) {
+			return await module.getObjects(keys);
+		}
 		const res = await module.pool.query({
 			name: 'getObjectsFields',
 			text: `
@@ -284,7 +301,7 @@ SELECT (h."data" ? $2::TEXT AND h."data"->>$2::TEXT IS NOT NULL) b
 			return null;
 		}
 
-		return await module.transaction(async function (client) {
+		return await module.transaction(async (client) => {
 			if (Array.isArray(key)) {
 				await helpers.ensureLegacyObjectsType(client, key, 'hash');
 			} else {

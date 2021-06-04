@@ -13,6 +13,11 @@ ajaxify = window.ajaxify || {};
 	ajaxify.count = 0;
 	ajaxify.currentPage = null;
 
+	var hooks;
+	require(['hooks'], function (_hooks) {
+		hooks = _hooks;
+	});
+
 	ajaxify.go = function (url, callback, quiet) {
 		// Automatically reconnect to socket and re-ajaxify on success
 		if (!socket.connected) {
@@ -46,13 +51,15 @@ ajaxify = window.ajaxify || {};
 			apiXHR.abort();
 		}
 
-		app.previousUrl = !['reset'].includes(ajaxify.currentPage) ? window.location.pathname.slice(config.relative_path.length) : app.previousUrl;
+		app.previousUrl = !['reset'].includes(ajaxify.currentPage) ?
+			window.location.pathname.slice(config.relative_path.length) + window.location.search :
+			app.previousUrl;
 
 		url = ajaxify.start(url);
 
 		// If any listeners alter url and set it to an empty string, abort the ajaxification
 		if (url === null) {
-			$(window).trigger('action:ajaxify.end', { url: url, tpl_url: ajaxify.data.template.name, title: ajaxify.data.title });
+			hooks.fire('action:ajaxify.end', { url: url, tpl_url: ajaxify.data.template.name, title: ajaxify.data.title });
 			return false;
 		}
 
@@ -60,7 +67,11 @@ ajaxify = window.ajaxify || {};
 		$('#footer, #content').removeClass('hide').addClass('ajaxifying');
 
 		ajaxify.loadData(url, function (err, data) {
-			if (!err || (err && err.data && (parseInt(err.data.status, 10) !== 302 && parseInt(err.data.status, 10) !== 308))) {
+			if (!err || (
+				err &&
+				err.data &&
+				(parseInt(err.data.status, 10) !== 302 && parseInt(err.data.status, 10) !== 308)
+			)) {
 				ajaxify.updateHistory(url, quiet);
 			}
 
@@ -107,7 +118,7 @@ ajaxify = window.ajaxify || {};
 			url: url,
 		};
 
-		$(window).trigger('action:ajaxify.start', payload);
+		hooks.fire('action:ajaxify.start', payload);
 
 		ajaxify.count += 1;
 
@@ -281,7 +292,7 @@ ajaxify = window.ajaxify || {};
 			window.scrollTo(0, 0);
 		}
 		ajaxify.loadScript(tpl_url, function done() {
-			$(window).trigger('action:ajaxify.end', { url: url, tpl_url: tpl_url, title: ajaxify.data.title });
+			hooks.fire('action:ajaxify.end', { url: url, tpl_url: tpl_url, title: ajaxify.data.title });
 		});
 		ajaxify.widgets.render(tpl_url);
 
@@ -315,43 +326,49 @@ ajaxify = window.ajaxify || {};
 		if (tpl_url.startsWith('admin')) {
 			location = '';
 		}
-		var data = {
+		const data = {
 			tpl_url: tpl_url,
 			scripts: [location + tpl_url],
 		};
 
-		$(window).trigger('action:script.load', data);
+		// Hint: useful if you want to load a module on a specific page (append module name to `scripts`)
+		hooks.fire('action:script.load', data);
+		hooks.fire('filter:script.load', data).then((data) => {
+			// Require and parse modules
+			var outstanding = data.scripts.length;
 
-		// Require and parse modules
-		var outstanding = data.scripts.length;
-
-		data.scripts.map(function (script) {
-			if (typeof script === 'function') {
-				return function (next) {
-					script();
-					next();
-				};
-			}
-			if (typeof script === 'string') {
-				return function (next) {
-					require([script], function (script) {
-						if (script && script.init) {
-							script.init();
-						}
+			data.scripts.map(function (script) {
+				if (typeof script === 'function') {
+					return function (next) {
+						script();
 						next();
-					}, function () {
-						// ignore 404 error
-						next();
-					});
-				};
-			}
-			return null;
-		}).filter(Boolean).forEach(function (fn) {
-			fn(function () {
-				outstanding -= 1;
-				if (outstanding === 0) {
-					callback();
+					};
 				}
+				if (typeof script === 'string') {
+					return function (next) {
+						require([script], function (module) {
+							// Hint: useful if you want to override a loaded library (e.g. replace core client-side logic),
+							// or call a method other than .init()
+							hooks.fire('static:script.init', { tpl_url, name: script, module }).then(() => {
+								if (module && module.init) {
+									module.init();
+								}
+								next();
+							});
+						}, function () {
+							// ignore 404 error
+							next();
+						});
+					};
+				}
+				return null;
+			}).filter(Boolean).forEach(function (fn) {
+				fn(function () {
+					outstanding -= 1;
+					if (outstanding === 0) {
+						callback();
+					}
+				});
 			});
 		});
 	};
@@ -438,6 +455,7 @@ $(document).ready(function () {
 
 	function ajaxifyAnchors() {
 		function hrefEmpty(href) {
+			// eslint-disable-next-line no-script-url
 			return href === undefined || href === '' || href === 'javascript:;';
 		}
 		var location = document.location || window.location;
@@ -455,10 +473,11 @@ $(document).ready(function () {
 			var href = $this.attr('href');
 			var internalLink = utils.isInternalURI(this, window.location, config.relative_path);
 
+			const rootAndPath = new RegExp(`^${rootUrl}${config.relative_path}/?`);
 			var process = function () {
 				if (!e.ctrlKey && !e.shiftKey && !e.metaKey && e.which === 1) {
 					if (internalLink) {
-						var pathname = this.href.replace(rootUrl + config.relative_path + '/', '');
+						var pathname = this.href.replace(rootAndPath, '');
 
 						// Special handling for urls with hashes
 						if (window.location.pathname === this.pathname && this.hash.length) {
@@ -508,6 +527,7 @@ $(document).ready(function () {
 				return;
 			}
 
+			// eslint-disable-next-line no-script-url
 			if (hrefEmpty(this.href) ||	this.protocol === 'javascript:' || href === '#' || href === '') {
 				return e.preventDefault();
 			}

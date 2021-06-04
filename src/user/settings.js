@@ -14,7 +14,7 @@ module.exports = function (User) {
 		if (parseInt(uid, 10) <= 0) {
 			return await onSettingsLoaded(0, {});
 		}
-		let settings = await db.getObject('user:' + uid + ':settings');
+		let settings = await db.getObject(`user:${uid}:settings`);
 		settings = settings || {};
 		settings.uid = uid;
 		return await onSettingsLoaded(uid, settings);
@@ -25,9 +25,9 @@ module.exports = function (User) {
 			return [];
 		}
 
-		const keys = uids.map(uid => 'user:' + uid + ':settings');
+		const keys = uids.map(uid => `user:${uid}:settings`);
 		let settings = await db.getObjects(keys);
-		settings = settings.map(function (userSettings, index) {
+		settings = settings.map((userSettings, index) => {
 			userSettings = userSettings || {};
 			userSettings.uid = uids[index];
 			return userSettings;
@@ -48,16 +48,16 @@ module.exports = function (User) {
 		settings.openOutgoingLinksInNewTab = parseInt(getSetting(settings, 'openOutgoingLinksInNewTab', 0), 10) === 1;
 		settings.dailyDigestFreq = getSetting(settings, 'dailyDigestFreq', 'off');
 		settings.usePagination = parseInt(getSetting(settings, 'usePagination', 0), 10) === 1;
-		settings.topicsPerPage =
-			Math.min(
-				meta.config.maxTopicsPerPage,
-				Math.min(settings.topicsPerPage ? parseInt(settings.topicsPerPage, 10) : defaultTopicsPerPage, defaultTopicsPerPage)
-			);
-		settings.postsPerPage =
-			Math.min(
-				meta.config.maxPostsPerPage,
-				Math.min(settings.postsPerPage ? parseInt(settings.postsPerPage, 10) : defaultPostsPerPage, defaultPostsPerPage)
-			);
+		settings.topicsPerPage = Math.min(
+			meta.config.maxTopicsPerPage,
+			settings.topicsPerPage ? parseInt(settings.topicsPerPage, 10) : defaultTopicsPerPage,
+			defaultTopicsPerPage
+		);
+		settings.postsPerPage = Math.min(
+			meta.config.maxPostsPerPage,
+			settings.postsPerPage ? parseInt(settings.postsPerPage, 10) : defaultPostsPerPage,
+			defaultPostsPerPage
+		);
 		settings.userLang = settings.userLang || meta.config.defaultLang || 'en-GB';
 		settings.acpLang = settings.acpLang || settings.userLang;
 		settings.topicPostSort = getSetting(settings, 'topicPostSort', 'oldest_to_newest');
@@ -74,7 +74,7 @@ module.exports = function (User) {
 		settings.categoryWatchState = getSetting(settings, 'categoryWatchState', 'notwatching');
 
 		const notificationTypes = await notifications.getAllNotificationTypes();
-		notificationTypes.forEach(function (notificationType) {
+		notificationTypes.forEach((notificationType) => {
 			settings[notificationType] = getSetting(settings, notificationType, 'notification');
 		});
 
@@ -92,13 +92,21 @@ module.exports = function (User) {
 
 	User.saveSettings = async function (uid, data) {
 		const maxPostsPerPage = meta.config.maxPostsPerPage || 20;
-		if (!data.postsPerPage || parseInt(data.postsPerPage, 10) <= 1 || parseInt(data.postsPerPage, 10) > maxPostsPerPage) {
-			throw new Error('[[error:invalid-pagination-value, 2, ' + maxPostsPerPage + ']]');
+		if (
+			!data.postsPerPage ||
+			parseInt(data.postsPerPage, 10) <= 1 ||
+			parseInt(data.postsPerPage, 10) > maxPostsPerPage
+		) {
+			throw new Error(`[[error:invalid-pagination-value, 2, ${maxPostsPerPage}]]`);
 		}
 
 		const maxTopicsPerPage = meta.config.maxTopicsPerPage || 20;
-		if (!data.topicsPerPage || parseInt(data.topicsPerPage, 10) <= 1 || parseInt(data.topicsPerPage, 10) > maxTopicsPerPage) {
-			throw new Error('[[error:invalid-pagination-value, 2, ' + maxTopicsPerPage + ']]');
+		if (
+			!data.topicsPerPage ||
+			parseInt(data.topicsPerPage, 10) <= 1 ||
+			parseInt(data.topicsPerPage, 10) > maxTopicsPerPage
+		) {
+			throw new Error(`[[error:invalid-pagination-value, 2, ${maxTopicsPerPage}]]`);
 		}
 
 		const languageCodes = await languages.listCodes();
@@ -137,13 +145,13 @@ module.exports = function (User) {
 			topicPostSort: data.topicPostSort,
 		};
 		const notificationTypes = await notifications.getAllNotificationTypes();
-		notificationTypes.forEach(function (notificationType) {
+		notificationTypes.forEach((notificationType) => {
 			if (data[notificationType]) {
 				settings[notificationType] = data[notificationType];
 			}
 		});
 		const result = await plugins.hooks.fire('filter:user.saveSettings', { settings: settings, data: data });
-		await db.setObject('user:' + uid + ':settings', result.settings);
+		await db.setObject(`user:${uid}:settings`, result.settings);
 		await User.updateDigestSetting(uid, data.dailyDigestFreq);
 		return await User.getSettings(uid);
 	};
@@ -151,7 +159,7 @@ module.exports = function (User) {
 	User.updateDigestSetting = async function (uid, dailyDigestFreq) {
 		await db.sortedSetsRemove(['digest:day:uids', 'digest:week:uids', 'digest:month:uids'], uid);
 		if (['day', 'week', 'month'].includes(dailyDigestFreq)) {
-			await db.sortedSetAdd('digest:' + dailyDigestFreq + ':uids', Date.now(), uid);
+			await db.sortedSetAdd(`digest:${dailyDigestFreq}:uids`, Date.now(), uid);
 		}
 	};
 
@@ -160,6 +168,6 @@ module.exports = function (User) {
 			return;
 		}
 
-		await db.setObjectField('user:' + uid + ':settings', key, value);
+		await db.setObjectField(`user:${uid}:settings`, key, value);
 	};
 };

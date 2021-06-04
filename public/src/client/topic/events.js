@@ -84,7 +84,11 @@ define('forum/topic/events', [
 	}
 
 	function onTopicPurged(data) {
-		if (ajaxify.data.category && ajaxify.data.category.slug && parseInt(data.tid, 10) === parseInt(ajaxify.data.tid, 10)) {
+		if (
+			ajaxify.data.category &&
+			ajaxify.data.category.slug &&
+			parseInt(data.tid, 10) === parseInt(ajaxify.data.tid, 10)
+		) {
 			ajaxify.go('category/' + ajaxify.data.category.slug, null, true);
 		}
 	}
@@ -109,6 +113,10 @@ define('forum/topic/events', [
 		var topicTitle = components.get('topic/title');
 		var navbarTitle = components.get('navbar/title').find('span');
 		var breadCrumb = components.get('breadcrumb/current');
+
+		if (data.topic.rescheduled) {
+			return ajaxify.go('topic/' + data.topic.slug, null, true);
+		}
 
 		if (topicTitle.length && data.topic.title && data.topic.renamed) {
 			ajaxify.data.title = data.topic.title;

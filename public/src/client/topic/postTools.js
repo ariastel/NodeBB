@@ -8,7 +8,8 @@ define('forum/topic/postTools', [
 	'translator',
 	'forum/topic/votes',
 	'api',
-], function (share, navigator, components, translator, votes, api) {
+	'bootbox',
+], function (share, navigator, components, translator, votes, api, bootbox) {
 	var PostTools = {};
 
 	var staleReplyAnyway = false;
@@ -139,6 +140,13 @@ define('forum/topic/postTools', [
 					id: uid,
 					name: username,
 				});
+			});
+		});
+
+		postContainer.on('click', '[component="post/flagResolve"]', function () {
+			var flagId = $(this).attr('data-flagId');
+			require(['flags'], function (flags) {
+				flags.resolve(flagId);
 			});
 		});
 
