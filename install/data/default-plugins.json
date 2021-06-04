@@ -10,6 +10,7 @@
   "@ariastel/nodebb-plugin-filter-nsfw",
   "@ariastel/nodebb-plugin-lightgallery",
   "@ariastel/nodebb-plugin-lor-deck",
+  "@ariastel/nodebb-plugin-markdown",
   "@ariastel/nodebb-plugin-news-posts",
   "@ariastel/nodebb-plugin-ns-embed",
   "@ariastel/nodebb-plugin-poll",
@@ -32,9 +33,7 @@
   "nodebb-plugin-custom-pages",
   "nodebb-plugin-dbsearch",
   "nodebb-plugin-google-analytics",
-  "nodebb-plugin-markdown",
   "nodebb-plugin-mentions",
-  "nodebb-plugin-sso-google",
   "nodebb-rewards-essentials",
   "nodebb-widget-essentials"
 ]
