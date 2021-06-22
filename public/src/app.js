@@ -72,6 +72,7 @@ app.cacheBuster = null;
 
 	app.load = function () {
 		handleStatusChange();
+		handleSkinChange();
 
 		if (config.searchEnabled) {
 			app.handleSearch();
@@ -678,6 +679,21 @@ app.cacheBuster = null;
 				app.user.status = status;
 			});
 			e.preventDefault();
+		});
+	}
+
+	function handleSkinChange() {
+		require(['api'], function (api) {
+			$('.bootswatchSkinSelect [component="skin/select"]').off('click').on('click', function (e) {
+				var skin = config.bootswatchSkin === 'dark' ? 'light' : 'dark';
+				api.put(`/users/${app.user.uid}/settings`, { settings: { bootswatchSkin: skin } }).then((newSettings) => {
+					window.location.reload(true);
+					if (config.hasOwnProperty('bootswatchSkin')) {
+						config.bootswatchSkin = newSettings.bootswatchSkin;
+					}
+				});
+				e.preventDefault();
+			});
 		});
 	}
 
