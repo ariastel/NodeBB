@@ -24,6 +24,7 @@
   "@ariastel/nodebb-plugin-sso-riot",
   "@ariastel/nodebb-plugin-sso-vk",
   "@ariastel/nodebb-plugin-super-categories",
+  "@ariastel/nodebb-plugin-watch-together",
   "@ariastel/nodebb-theme-ariastel",
   "@ariastel/nodebb-widget-partners",
   "@ariastel/nodebb-widget-recent-posts",
