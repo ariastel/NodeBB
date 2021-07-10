@@ -292,6 +292,10 @@ define('forum/topic/posts', [
 			return;
 		}
 
+		if (!ajaxify.data.privileges.isAdminOrMod) {
+			return;
+		}
+
 		// Filter out events already in DOM
 		const eventIdsInDOM = Array.from(document.querySelectorAll('[component="topic/event"]')).map(el => parseInt(el.getAttribute('data-topic-event-id'), 10));
 		events = events.filter(event => !eventIdsInDOM.includes(event.id));
