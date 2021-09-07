@@ -122,6 +122,10 @@ helpers.notAllowed = async function (req, res, error) {
 		error: error,
 	});
 
+	if (res.headersSent) {
+		return;
+	}
+
 	if (req.loggedIn || req.uid === -1) {
 		if (res.locals.isAPI) {
 			helpers.formatApiResponse(403, res, error);
