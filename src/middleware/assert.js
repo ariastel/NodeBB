@@ -8,11 +8,13 @@
 const path = require('path');
 const nconf = require('nconf');
 
+const db = require('../database');
 const file = require('../file');
 const user = require('../user');
 const groups = require('../groups');
 const topics = require('../topics');
 const posts = require('../posts');
+const slugify = require('../slugify');
 
 const helpers = require('./helpers');
 const controllerHelpers = require('../controllers/helpers');
@@ -52,6 +54,14 @@ Assert.post = helpers.try(async (req, res, next) => {
 	next();
 });
 
+Assert.flag = helpers.try(async (req, res, next) => {
+	if (!await db.isSortedSetMember('flags:datetime', req.params.flagId)) {
+		return controllerHelpers.formatApiResponse(404, res, new Error('[[error:no-flag]]'));
+	}
+
+	next();
+});
+
 Assert.path = helpers.try(async (req, res, next) => {
 	// file: URL support
 	if (req.body.path.startsWith('file:///')) {
@@ -74,6 +84,23 @@ Assert.path = helpers.try(async (req, res, next) => {
 	if (!await file.exists(pathToFile)) {
 		return controllerHelpers.formatApiResponse(404, res, new Error('[[error:invalid-path]]'));
 	}
+
+	next();
+});
+
+Assert.folderName = helpers.try(async (req, res, next) => {
+	const folderName = slugify(path.basename(req.body.folderName.trim()));
+	const folderPath = path.join(res.locals.cleanedPath, folderName);
+
+	// slugify removes invalid characters, folderName may become empty
+	if (!folderName) {
+		return controllerHelpers.formatApiResponse(403, res, new Error('[[error:invalid-path]]'));
+	}
+	if (await file.exists(folderPath)) {
+		return controllerHelpers.formatApiResponse(403, res, new Error('[[error:folder-exists]]'));
+	}
+
+	res.locals.folderPath = folderPath;
 
 	next();
 });

@@ -35,6 +35,8 @@ privsAdmin.userPrivilegeList = [
 
 privsAdmin.groupPrivilegeList = privsAdmin.userPrivilegeList.map(privilege => `groups:${privilege}`);
 
+privsAdmin.privilegeList = privsAdmin.userPrivilegeList.concat(privsAdmin.groupPrivilegeList);
+
 // Mapping for a page route (via direct match or regexp) to a privilege
 privsAdmin.routeMap = {
 	dashboard: 'admin:dashboard',
@@ -93,7 +95,6 @@ privsAdmin.socketMap = {
 	'admin.user.invite': 'admin:users',
 
 	'admin.tags.create': 'admin:tags',
-	'admin.tags.update': 'admin:tags',
 	'admin.tags.rename': 'admin:tags',
 	'admin.tags.deleteTags': 'admin:tags',
 

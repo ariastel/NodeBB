@@ -1,8 +1,8 @@
 'use strict';
 
 define('categorySelector', [
-	'categorySearch', 'bootbox',
-], function (categorySearch, bootbox) {
+	'categorySearch', 'bootbox', 'hooks',
+], function (categorySearch, bootbox, hooks) {
 	var categorySelector = {};
 
 	categorySelector.init = function (el, options) {
@@ -14,7 +14,7 @@ define('categorySelector', [
 
 		options.states = options.states || ['watching', 'notwatching', 'ignoring'];
 		options.template = 'partials/category-selector';
-		$(window).trigger('action:category.selector.options', { el: el, options: options });
+		hooks.fire('action:category.selector.options', { el: el, options: options });
 
 		categorySearch.init(el, options);
 
@@ -61,9 +61,9 @@ define('categorySelector', [
 		options = options || {};
 		options.onSelect = options.onSelect || function () {};
 		options.onSubmit = options.onSubmit || function () {};
-		app.parseAndTranslate('admin/partials/categories/select-category', {}, function (html) {
+		app.parseAndTranslate('admin/partials/categories/select-category', { message: options.message }, function (html) {
 			var modal = bootbox.dialog({
-				title: '[[modules:composer.select_category]]',
+				title: options.title || '[[modules:composer.select_category]]',
 				message: html,
 				buttons: {
 					save: {

@@ -6,6 +6,9 @@ define('hooks', [], () => {
 		temporary: new Set(),
 		deprecated: {
 			'action:script.load': 'filter:script.load',	// 👋 @ 1.18.0
+			'action:category.loaded': 'action:topics.loaded',	// 👋 @ 1.19.0
+			'action:category.loading': 'action:topics.loading',	// 👋 @ 1.19.0
+			'action:composer.check': 'filter:composer.check',	// 👋 @ 1.19.0
 		},
 	};
 
@@ -88,19 +91,21 @@ define('hooks', [], () => {
 		$(window).trigger(hookName, data);
 	};
 
-	const _fireStaticHook = (hookName, data) => {
+	const _fireStaticHook = async (hookName, data) => {
 		if (!Hooks.hasListeners(hookName)) {
 			return Promise.resolve(data);
 		}
 
 		const listeners = Array.from(Hooks.loaded[hookName]);
-		return Promise.allSettled(listeners.map((listener) => {
+		await Promise.allSettled(listeners.map((listener) => {
 			try {
 				return listener(data);
 			} catch (e) {
 				return _onHookError(e, listener);
 			}
-		})).then(() => Promise.resolve(data));
+		}));
+
+		return await Promise.resolve(data);
 	};
 
 	Hooks.fire = (hookName, data) => {

@@ -35,9 +35,13 @@ socket = window.socket;
 		});
 	};
 
-	if (parseInt(app.user.uid, 10) >= 0) {
-		addHandlers();
-	}
+	var hooks;
+	require(['hooks'], function (_hooks) {
+		hooks = _hooks;
+		if (parseInt(app.user.uid, 10) >= 0) {
+			addHandlers();
+		}
+	});
 
 	window.app.reconnect = () => {
 		if (socket.connected) {
@@ -124,7 +128,7 @@ socket = window.socket;
 
 	function onConnect() {
 		if (!reconnecting) {
-			$(window).trigger('action:connected');
+			hooks.fire('action:connected');
 		}
 
 		if (reconnecting) {
@@ -140,7 +144,7 @@ socket = window.socket;
 
 			socket.emit('meta.reconnected');
 
-			$(window).trigger('action:reconnected');
+			hooks.fire('action:reconnected');
 
 			setTimeout(function () {
 				reconnectEl.removeClass('active').addClass('hide');
@@ -204,7 +208,7 @@ socket = window.socket;
 			}
 		}, 2000);
 
-		$(window).trigger('action:disconnected');
+		hooks.fire('action:disconnected');
 	}
 
 	function onEventBanned(data) {

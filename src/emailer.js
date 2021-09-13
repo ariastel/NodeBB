@@ -219,6 +219,12 @@ Emailer.send = async (template, uid, params) => {
 	}
 
 	let userData = await User.getUserFields(uid, ['email', 'username', 'email:confirmed']);
+
+	// 'welcome' and 'verify-email' explicitly used passed-in email address
+	if (['welcome', 'verify-email'].includes(template)) {
+		userData.email = params.email;
+	}
+
 	({ template, userData, params } = await Plugins.hooks.fire('filter:email.prepare', { template, uid, userData, params }));
 	if (!userData || !userData.email) {
 		if (process.env.NODE_ENV === 'development') {
@@ -227,8 +233,8 @@ Emailer.send = async (template, uid, params) => {
 		return;
 	}
 
-	const allowedTpls = ['verify_email', 'welcome', 'registration_accepted'];
-	if (meta.config.requireEmailConfirmation && !userData['email:confirmed'] && !allowedTpls.includes(template)) {
+	const allowedTpls = ['verify-email', 'welcome', 'registration_accepted', 'reset', 'reset_notify'];
+	if (!meta.config.includeUnverifiedEmails && !userData['email:confirmed'] && !allowedTpls.includes(template)) {
 		if (process.env.NODE_ENV === 'development') {
 			winston.warn(`uid : ${uid} (${userData.email}) has not confirmed email, not sending "${template}" email.`);
 		}
@@ -318,7 +324,7 @@ Emailer.sendToEmail = async (template, email, language, params) => {
 		!Plugins.hooks.hasListeners('static:email.send');
 	try {
 		if (Plugins.hooks.hasListeners('filter:email.send')) {
-			// Deprecated, remove in v1.18.0
+			// Deprecated, remove in v1.19.0
 			await Plugins.hooks.fire('filter:email.send', data);
 		} else if (Plugins.hooks.hasListeners('static:email.send')) {
 			await Plugins.hooks.fire('static:email.send', data);

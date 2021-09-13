@@ -1,6 +1,7 @@
 'use strict';
 
 const nconf = require('nconf');
+const qs = require('querystring');
 
 const user = require('../user');
 const meta = require('../meta');
@@ -43,11 +44,11 @@ topicsController.get = async function getTopic(req, res, callback) {
 
 	let currentPage = parseInt(req.query.page, 10) || 1;
 	const pageCount = Math.max(1, Math.ceil((topicData && topicData.postcount) / settings.postsPerPage));
-	const validPagination = (settings.usePagination && (currentPage < 1 || currentPage > pageCount));
+	const invalidPagination = (settings.usePagination && (currentPage < 1 || currentPage > pageCount));
 	if (
 		!topicData ||
 		userPrivileges.disabled ||
-		validPagination ||
+		invalidPagination ||
 		(topicData.scheduled && !userPrivileges.view_scheduled)
 	) {
 		return callback();
@@ -58,7 +59,7 @@ topicsController.get = async function getTopic(req, res, callback) {
 	}
 
 	if (!res.locals.isAPI && (!req.params.slug || topicData.slug !== `${tid}/${req.params.slug}`) && (topicData.slug && topicData.slug !== `${tid}/`)) {
-		return helpers.redirect(res, `/topic/${topicData.slug}${postIndex ? `/${postIndex}` : ''}${currentPage > 1 ? `?page=${currentPage}` : ''}`, true);
+		return helpers.redirect(res, `/topic/${topicData.slug}${postIndex ? `/${postIndex}` : ''}${generateQueryString(req.query)}`, true);
 	}
 
 	if (postIndex === 'unread') {
@@ -66,7 +67,7 @@ topicsController.get = async function getTopic(req, res, callback) {
 	}
 
 	if (utils.isNumber(postIndex) && topicData.postcount > 0 && (postIndex < 1 || postIndex > topicData.postcount)) {
-		return helpers.redirect(res, `/topic/${req.params.topic_id}/${req.params.slug}${postIndex > topicData.postcount ? `/${topicData.postcount}` : ''}`);
+		return helpers.redirect(res, `/topic/${tid}/${req.params.slug}${postIndex > topicData.postcount ? `/${topicData.postcount}` : ''}${generateQueryString(req.query)}`);
 	}
 	postIndex = Math.max(1, postIndex);
 	const sort = req.query.sort || settings.topicPostSort;
@@ -80,6 +81,7 @@ topicsController.get = async function getTopic(req, res, callback) {
 	await topics.getTopicWithPosts(topicData, set, req.uid, start, stop, reverse);
 
 	topics.modifyPostsByPrivilege(topicData, userPrivileges);
+	topicData.tagWhitelist = categories.filterTagWhitelist(topicData.tagWhitelist, userPrivileges.isAdminOrMod);
 
 	topicData.privileges = userPrivileges;
 	topicData.topicStaleDays = meta.config.topicStaleDays;
@@ -118,6 +120,11 @@ topicsController.get = async function getTopic(req, res, callback) {
 
 	res.render('topic', topicData);
 };
+
+function generateQueryString(query) {
+	const qString = qs.stringify(query);
+	return qString.length ? `?${qString}` : '';
+}
 
 function calculatePageFromIndex(postIndex, settings) {
 	return 1 + Math.floor((postIndex - 1) / settings.postsPerPage);

@@ -41,6 +41,8 @@ get:
                 type: number
               minimumTagLength:
                 type: number
+              undoTimeout:
+                type: number
               maximumTagLength:
                 type: number
               useOutgoingLinksPage:
@@ -90,8 +92,6 @@ get:
                 description: A user identifier
               cache-buster:
                 type: string
-              requireEmailConfirmation:
-                type: boolean
               topicPostSort:
                 type: string
               categoryTopicSort:

@@ -6,7 +6,8 @@ define('topicList', [
 	'topicSelect',
 	'categoryFilter',
 	'forum/category/tools',
-], function (infinitescroll, handleBack, topicSelect, categoryFilter, categoryTools) {
+	'hooks',
+], function (infinitescroll, handleBack, topicSelect, categoryFilter, categoryTools, hooks) {
 	var TopicList = {};
 	var templateName = '';
 
@@ -56,7 +57,7 @@ define('topicList', [
 
 		handleBack.init(function (after, handleBackCallback) {
 			loadTopicsCallback(after, 1, function (data, loadCallback) {
-				TopicList.onTopicsLoaded(templateName, data.topics, ajaxify.data.showSelect, 1, function () {
+				onTopicsLoaded(templateName, data.topics, ajaxify.data.showSelect, 1, function () {
 					handleBackCallback();
 					loadCallback();
 				});
@@ -71,7 +72,7 @@ define('topicList', [
 			TopicList.loadMoreTopics(1);
 		});
 
-		$(window).trigger('action:topics.loaded', { topics: ajaxify.data.topics });
+		hooks.fire('action:topics.loaded', { topics: ajaxify.data.topics });
 	};
 
 	function findTopicListElement() {
@@ -192,7 +193,7 @@ define('topicList', [
 		}
 
 		loadTopicsCallback(after, direction, function (data, done) {
-			TopicList.onTopicsLoaded(templateName, data.topics, ajaxify.data.showSelect, direction, done);
+			onTopicsLoaded(templateName, data.topics, ajaxify.data.showSelect, direction, done);
 		});
 	};
 
@@ -219,7 +220,7 @@ define('topicList', [
 		});
 	}
 
-	TopicList.onTopicsLoaded = function (templateName, topics, showSelect, direction, callback) {
+	function onTopicsLoaded(templateName, topics, showSelect, direction, callback) {
 		if (!topics || !topics.length) {
 			$('#load-more-btn').hide();
 			return callback();
@@ -250,6 +251,8 @@ define('topicList', [
 		};
 		tplData.template[templateName] = true;
 
+		hooks.fire('action:topics.loading', { topics: topics, after: after, before: before });
+
 		app.parseAndTranslate(templateName, 'topics', tplData, function (html) {
 			topicListEl.removeClass('hidden');
 			$('#category-no-topics').remove();
@@ -274,10 +277,10 @@ define('topicList', [
 			html.find('.timeago').timeago();
 			app.createUserTooltips(html);
 			utils.makeNumbersHumanReadable(html.find('.human-readable-number'));
-			$(window).trigger('action:topics.loaded', { topics: topics, template: templateName });
+			hooks.fire('action:topics.loaded', { topics: topics, template: templateName });
 			callback();
 		});
-	};
+	}
 
 	return TopicList;
 });

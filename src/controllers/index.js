@@ -193,6 +193,7 @@ Controllers.registerInterstitial = async function (req, res, next) {
 	}
 	try {
 		const data = await plugins.hooks.fire('filter:register.interstitial', {
+			req,
 			userData: req.session.registration,
 			interstitials: [],
 		});
@@ -212,7 +213,8 @@ Controllers.registerInterstitial = async function (req, res, next) {
 
 		res.render('registerComplete', {
 			title: '[[pages:registration-complete]]',
-			sections: sections,
+			register: data.userData.register,
+			sections,
 			errors,
 		});
 	} catch (err) {
@@ -220,12 +222,19 @@ Controllers.registerInterstitial = async function (req, res, next) {
 	}
 };
 
-Controllers.confirmEmail = function (req, res) {
-	user.email.confirmByCode(req.params.code, (err) => {
-		res.render('confirm', {
-			error: err ? err.message : '',
-			title: '[[pages:confirm]]',
-		});
+Controllers.confirmEmail = async (req, res, next) => {
+	try {
+		await user.email.confirmByCode(req.params.code, req.session.id);
+	} catch (e) {
+		if (e.message === '[[error:invalid-data]]') {
+			return next();
+		}
+
+		throw e;
+	}
+
+	res.render('confirm', {
+		title: '[[pages:confirm]]',
 	});
 };
 

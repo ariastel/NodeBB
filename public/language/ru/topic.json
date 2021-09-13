@@ -21,6 +21,8 @@
     "login-to-view": "Авторизуйтесь, чтобы просмотреть",
     "edit": "Изменить",
     "delete": "Удалить",
+    "delete-event": "Delete Event",
+    "delete-event-confirm": "Are you sure you want to delete this event?",
     "purge": "Стереть",
     "restore": "Восстановить",
     "move": "Перенести",
@@ -44,6 +46,7 @@
     "unpinned-by": "Откреплено",
     "deleted-by": "Удалено",
     "restored-by": "Восстановлено",
+    "moved-from-by": "Moved from %1 by",
     "queued-by": "Сообщение поставлено в очередь на утверждение;",
     "bookmark_instructions": "Нажмите здесь, чтобы вернуться к последнему прочитанному сообщению в этой теме.",
     "flag-post": "Пожаловаться на это сообщение",
@@ -174,5 +177,6 @@
     "timeago_later": "через %1",
     "timeago_earlier": "на %1 раньше",
     "first-post": "Первое сообщение",
-    "last-post": "Последнее сообщение"
+    "last-post": "Последнее сообщение",
+    "post-quick-reply": "Post quick reply"
 }

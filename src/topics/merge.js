@@ -2,6 +2,7 @@
 
 const async = require('async');
 const plugins = require('../plugins');
+const posts = require('../posts');
 
 module.exports = function (Topics) {
 	Topics.merge = async function (tids, uid, options) {
@@ -38,7 +39,10 @@ module.exports = function (Topics) {
 			});
 		});
 
-		await updateViewCount(mergeIntoTid, tids);
+		await Promise.all([
+			posts.updateQueuedPostsTopic(mergeIntoTid, otherTids),
+			updateViewCount(mergeIntoTid, tids),
+		]);
 
 		plugins.hooks.fire('action:topic.merge', {
 			uid: uid,
@@ -51,11 +55,16 @@ module.exports = function (Topics) {
 
 	async function createNewTopic(title, oldestTid) {
 		const topicData = await Topics.getTopicFields(oldestTid, ['uid', 'cid']);
-		const tid = await Topics.create({
+		const params = {
 			uid: topicData.uid,
 			cid: topicData.cid,
 			title: title,
+		};
+		const result = await plugins.hooks.fire('filter:topic.mergeCreateNewTopic', {
+			oldestTid: oldestTid,
+			params: params,
 		});
+		const tid = await Topics.create(result.params);
 		return tid;
 	}
 

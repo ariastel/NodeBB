@@ -1,9 +1,7 @@
 'use strict';
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const async = require('async');
 const winston = require('winston');
 const semver = require('semver');
 const nconf = require('nconf');
@@ -25,23 +23,6 @@ require('./load')(Plugins);
 require('./usage')(Plugins);
 Plugins.data = require('./data');
 Plugins.hooks = require('./hooks');
-
-// Backwards compatibility for hooks, remove in v1.18.0
-const _deprecate = async function (...args) {
-	const oldMethod = args.shift();
-	const newMethod = args.shift();
-	const method = args.shift();
-	const stack = new Error().stack.toString().split(os.EOL);
-	const context = stack[stack.findIndex(line => line.startsWith('    at Object.wrapperCallback')) + 1];
-	winston.warn(`[plugins/hooks] ${oldMethod} has been deprecated, call ${newMethod} instead.`);
-	winston.warn(`[plugins/hooks] ${context}`);
-	return method.apply(Plugins.hooks, args);
-};
-Plugins.registerHook = _deprecate.bind(null, 'Plugins.registerHook', 'Plugins.hooks.register', Plugins.hooks.register);
-Plugins.unregisterHook = _deprecate.bind(null, 'Plugins.unregisterHook', 'Plugins.hooks.unregister', Plugins.hooks.unregister);
-Plugins.fireHook = _deprecate.bind(null, 'Plugins.fireHook', 'Plugins.hooks.fire', Plugins.hooks.fire);
-Plugins.hasListeners = _deprecate.bind(null, 'Plugins.hasListeners', 'Plugins.hooks.hasListeners', Plugins.hooks.hasListeners);
-// end
 
 Plugins.getPluginPaths = Plugins.data.getPluginPaths;
 Plugins.loadPluginInfo = Plugins.data.loadPluginInfo;
@@ -283,54 +264,45 @@ Plugins.showInstalled = async function () {
 
 async function findNodeBBModules(dirs) {
 	const pluginPaths = [];
-	await async.each(dirs, (dirname, next) => {
+	await Promise.all(dirs.map(async (dirname) => {
 		const dirPath = path.join(Plugins.nodeModulesPath, dirname);
+		const isDir = await isDirectory(dirPath);
+		if (!isDir) {
+			return;
+		}
+		if (pluginNamePattern.test(dirname)) {
+			pluginPaths.push(dirname);
+			return;
+		}
 
-		async.waterfall([
-			function (cb) {
-				fs.stat(dirPath, (err, stats) => {
-					if (err && err.code !== 'ENOENT') {
-						return cb(err);
-					}
-					if (err || !stats.isDirectory()) {
-						return next();
-					}
+		if (dirname[0] === '@') {
+			const subdirs = await fs.promises.readdir(dirPath);
+			await Promise.all(subdirs.map(async (subdir) => {
+				if (!pluginNamePattern.test(subdir)) {
+					return;
+				}
 
-					if (pluginNamePattern.test(dirname)) {
-						pluginPaths.push(dirname);
-						return next();
-					}
-
-					if (dirname[0] !== '@') {
-						return next();
-					}
-					fs.readdir(dirPath, cb);
-				});
-			},
-			function (subdirs, cb) {
-				async.each(subdirs, (subdir, next) => {
-					if (!pluginNamePattern.test(subdir)) {
-						return next();
-					}
-
-					const subdirPath = path.join(dirPath, subdir);
-					fs.stat(subdirPath, (err, stats) => {
-						if (err && err.code !== 'ENOENT') {
-							return next(err);
-						}
-
-						if (err || !stats.isDirectory()) {
-							return next();
-						}
-
-						pluginPaths.push(`${dirname}/${subdir}`);
-						next();
-					});
-				}, cb);
-			},
-		], next);
-	});
+				const subdirPath = path.join(dirPath, subdir);
+				const isDir = await isDirectory(subdirPath);
+				if (isDir) {
+					pluginPaths.push(`${dirname}/${subdir}`);
+				}
+			}));
+		}
+	}));
 	return pluginPaths;
+}
+
+async function isDirectory(dirPath) {
+	try {
+		const stats = await fs.promises.stat(dirPath);
+		return stats.isDirectory();
+	} catch (err) {
+		if (err.code !== 'ENOENT') {
+			throw err;
+		}
+		return false;
+	}
 }
 
 require('../promisify')(Plugins);

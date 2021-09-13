@@ -27,14 +27,19 @@ Data.getInstalledPlugins = async function getInstalledPlugins() {
 
 Data.getPluginPaths = async function () {
 	const useLocalPlugins = nconf.get('NODEBB_USE_LOCAL_PLUGINS') === 'true';
-	let plugins = useLocalPlugins	?
+	const plugins = useLocalPlugins	?
 		await Data.getInstalledPlugins() :
 		await db.getSortedSetRange('plugins:active', 0, -1);
-	plugins = plugins.filter(plugin => plugin && typeof plugin === 'string')
+	const pluginPaths = plugins.filter(plugin => plugin && typeof plugin === 'string')
 		.map(plugin => path.join(paths.nodeModules, plugin));
 
-	const exists = await Promise.all(plugins.map(p => file.exists(p)));
-	return plugins.filter((p, i) => exists[i]);
+	const exists = await Promise.all(pluginPaths.map(file.exists));
+	exists.forEach((exists, i) => {
+		if (!exists) {
+			winston.warn(`[plugins] "${plugins[i]}" is active but not installed.`);
+		}
+	});
+	return pluginPaths.filter((p, i) => exists[i]);
 };
 
 Data.loadPluginInfo = async function (pluginPath) {

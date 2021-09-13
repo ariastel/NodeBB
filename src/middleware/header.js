@@ -6,7 +6,6 @@ const _ = require('lodash');
 const validator = require('validator');
 const util = require('util');
 
-const db = require('../database');
 const user = require('../user');
 const topics = require('../topics');
 const messaging = require('../messaging');
@@ -75,7 +74,7 @@ middleware.renderHeader = async function renderHeader(req, res, data) {
 		isModerator: user.isModeratorOfAnyCategory(req.uid),
 		privileges: privileges.global.get(req.uid),
 		user: user.getUserData(req.uid),
-		isEmailConfirmSent: (!meta.config.requireEmailConfirmation || req.uid <= 0) ? false : await db.get(`uid:${req.uid}:confirm:email:sent`),
+		isEmailConfirmSent: req.uid <= 0 ? false : await user.email.isValidationPending(req.uid),
 		languageDirection: translator.translate('[[language:dir]]', res.locals.config.userLang),
 		timeagoCode: languages.userTimeagoCode(res.locals.config.userLang),
 		browserTitle: translator.translate(controllers.helpers.buildTitle(translator.unescape(data.title))),
@@ -102,7 +101,6 @@ middleware.renderHeader = async function renderHeader(req, res, data) {
 	results.user.isEmailConfirmSent = !!results.isEmailConfirmSent;
 
 	templateValues.bootswatchSkin = (parseInt(meta.config.disableCustomUserSkins, 10) !== 1 ? res.locals.config.bootswatchSkin : '') || meta.config.bootswatchSkin || '';
-	templateValues.config.bootswatchSkin = templateValues.bootswatchSkin || 'noskin';	// TODO remove in v1.12.0+
 	templateValues.browserTitle = results.browserTitle;
 	({
 		navigation: templateValues.navigation,
@@ -156,7 +154,7 @@ middleware.renderHeader = async function renderHeader(req, res, data) {
 async function appendUnreadCounts({ uid, navigation, unreadData, query }) {
 	const originalRoutes = navigation.map(nav => nav.originalRoute);
 	const calls = {
-		unreadData: topics.getUnreadData({ uid: uid }),
+		unreadData: topics.getUnreadData({ uid: uid, query: query }),
 		unreadChatCount: messaging.getUnreadCount(uid),
 		unreadNotificationCount: user.notifications.getUnreadCount(uid),
 		unreadFlagCount: (async function () {

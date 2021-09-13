@@ -1,3 +1,443 @@
+#### v1.18.1 (2021-09-03)
+
+##### Chores
+
+*  found some hooks that don't play well docgen (ae793b4a)
+*  incrementing version number - v1.18.0 (1e436ae7)
+*  update changelog for v1.18.0 (2fd9c095)
+* **deps:**  update dependency mocha to v9.1.1 (64bac178)
+
+##### New Features
+
+*  create folders in ACP uploads #9638 (#9750) (3df79683)
+*  column based view on wide priv. tables (#9699) (61f02f17)
+*  als (#9749) (e59d3575)
+*  add quick reply key (e9314842)
+*  add new lang key for no best posts (6e73d8c9)
+
+##### Bug Fixes
+
+* **deps:**
+  *  update dependency autoprefixer to v10.3.4 (67b932f4)
+  *  update dependency nodebb-theme-persona to v11.2.4 (fe18e100)
+  *  update dependency mongodb to v3.7.0 (31a35d7f)
+  *  update socket.io packages to v4.2.0 (f2028d70)
+  *  update dependency ioredis to v4.27.9 (6052eb16)
+  *  update dependency mongodb to v3.6.12 (#9761) (5fa982c1)
+  *  update dependency nodebb-plugin-composer-default to v7.0.2 (33d51201)
+  *  update dependency nodebb-theme-slick to v1.4.12 (1b416d7e)
+  *  update dependency nodebb-theme-slick to v1.4.11 (65b32fa1)
+  *  update dependency nodebb-theme-persona to v11.2.3 (6ce321e4)
+  *  update dependency autoprefixer to v10.3.3 (91ba7cdf)
+  *  update dependency nodebb-theme-slick to v1.4.9 (d80b378f)
+  *  update dependency jquery-deserialize to v2.0.0 (#9744) (7f9451ce)
+*  determine indeterminate checkboxes (760ea9df)
+*  move app.alert back into the conditionals (ca9bae3a)
+*  only show email confirmation warning toast on pages that it applies (1bd1cc74)
+*  updated email confirm warning to be more positive (2d1380dd)
+*  automated tests are a good thing to have (6afeac37)
+
+##### Refactors
+
+*  consistent jquery element var naming (fc0e655e)
+*  var to const (1272da65)
+
+#### v1.18.0 (2021-08-25)
+
+##### Breaking Changes
+
+* **emails:**  restore ability for admins to edit a user's email address [breaking] (c4e3362b)
+*  #9670 return 4xx errors instead of 5xx on flag routes, when unauthenticated or not privileged [breaking] (d1959a25)
+*  made TopicList.onTopicsLoaded private [breaking] (07f25d8c)
+*  return proper API-style response if exception caught by error handler on v3 routes [breaking] (a54a3ee1)
+
+##### Chores
+
+* **deps:**
+  *  update dependency husky to v7.0.2 (324c7d48)
+  *  update dependency eslint-plugin-import to v2.24.2 (9a34fe18)
+  *  update dependency eslint-config-nodebb to v0.0.2 (cd85a55d)
+  *  update dependency mocha to v9.1.0 (c5a42273)
+  *  update dependency eslint-plugin-import to v2.24.1 (daca09d4)
+  *  update dependency @apidevtools/swagger-parser to v10.0.3 (ffdf61b8)
+  *  update dependency jsdom to v17 (#9700) (41855375)
+  *  update dependency eslint-plugin-import to v2.24.0 (23dafa20)
+  *  update dependency lint-staged to v11.1.2 (d47bdde2)
+  *  update dependency jsdom to v16.7.0 (9db28b4b)
+  *  update dependency eslint to v7.32.0 (03a98f4d)
+  *  update dependency mocha to v9.0.3 (40384fcb)
+  *  update dependency lint-staged to v11.1.1 (7588aae1)
+  *  update dependency lint-staged to v11.1.0 (cb5fe271)
+  *  update dependency mocha to v9 (f43291f5)
+  *  update dependency husky to v7 (702290c4)
+  *  update dependency eslint to v7.31.0 (f5a53b7f)
+  *  update dependency lint-staged to v11.0.1 (02101315)
+*  up markdown/composer-default, fixes: #9708 (b74eefac)
+*  incrementing version number - v1.17.2 (46be2046)
+*  update changelog for v1.17.2 (5c9c0605)
+
+##### Documentation Changes
+
+*  some hook deprecation notices (6bc090f8)
+
+##### New Features
+
+*  add confirmation modal to topic event deletion (e803737a)
+*  allow changing default search in (794bf01b)
+*  #9705, use radio buttons for flag reasons (382a4c27)
+*  Client-side hooks - replace window.trigger (#9679) (342503e0)
+*  closes #9684, allow event deletion (358ad740)
+*  replace eslint configs on server and client side to inherit rules from eslint-config-nodebb (f653a6ff)
+*  re-add FontAwesome font for compatibility (a370c26f)
+*  update to FontAwesome 5.15, resolve #6976 (41762e66)
+*  removed registerAndLoginUserCallback local helper, added handling if a bad interstitial doesn't go away nor throw errors (70a04bc1)
+*  updated email confirmation alert to more closely reflect email usage, remembering dismissal (bbbacd86)
+*  allow requirejs modules to be awaited (58adb762)
+*  show instructional modal after email change request (0e05cbe1)
+*  return back to profile after editing email (324a12b6)
+*  allow registration interstitial abort to also follow returnTo (b3c91641)
+*  plumb current session id into email removal/confirmation flow, so all other sessions are revoked except for the current session (96398faa)
+*  allow revokeAllSessions method to revoke all sessions except that which is passed in (new arg) (b0a4a1d3)
+*  return generic 404 on invalid confirm code (f53fc1ad)
+*  invites no longer require email (a917210c)
+*  show different registration intersitial lead text on new account vs. existing (74aaa0a9)
+*  removal of emailExists socket listener (12b2a979)
+*  add loggedin/guest class to body (04b1f702)
+*  convert _fireStaticHook to async function (auto-refactor by vscode) (21359eab)
+*  store topic tags in topic hash (#9656) (4a56388e)
+*  new hook `action:topics.loading` (in the same format as `action:posts.loading`) (e0db904b)
+*  schedule deprecation for `action:category.loaded` and `action:category.loading`. Use `action:topics.loaded/ing` instead (8ae4c300)
+*  internationalize API error messages (7036c375)
+*  #9651, change category desc to multiline (5fd190f7)
+* **emails:**
+  *  pass req in to filter:registration.interstitial (afd2d8da)
+  *  display current email in interstitial form (f5291999)
+  *  upgrade script for includeUnverifiedEmails (50517020)
+  *  +includeUnverifiedEmails ACP setting (be97aa6f)
+
+##### Bug Fixes
+
+*  lint (55693ec1)
+*  topic event deletion (1ee92c28)
+*  pluginPaths (0743554d)
+*  #9730, show warning if plugin is active but not installed (13878e9f)
+*  #9729, insert new posts after topic events (60bf5643)
+*  #9719, only apply to non https (c354cde3)
+*  #9727, addHandlers after hooks (77c3085a)
+*  allow smaller than 5mins for admin relogin duration (a288f51f)
+*  taskbar icon not pushed via composer/persona (3a81c8fd)
+*  #9698, pass along query params in redirect (9de64bf5)
+*  lint (8bf2896d)
+*  remove unnecessary quote (093ac1c0)
+*  parseInt tids (162ebacf)
+*  #9681, update posts in queue if target tid is merged (0c816429)
+*  email update interstitial to not error on empty email field (on new registration) (4a521ea2)
+*  updated ACP > Manage > Users to handle users with no email address (824a72b2)
+*  allowed reset and reset_notify emails to go out to unconfirmed email addresses (d5b5b7d5)
+*  bug where confirmation email was sent to the old email address, not the new one (414d733d)
+*  email validation flow, so that it actually works, fixed event logging bug, new email verification template (3bcd1f14)
+*  accidental early return in confirmByCode, tests, race condition (caf89687)
+*  test :shipit: (2c06ac9a)
+*  failing test from d1959a2 (f71f2951)
+*  #9668, add raw info to psql database page (6c47a060)
+*  use hooks module instead of window trigger (acb11cc7)
+*  tests (0960a814)
+*  translate language keys if passed in to formatApiResponse (415416d2)
+*  lint (ff78969c)
+*  tests (55d7e558)
+*  keep query string on redirects (47c8c692)
+* **deps:**
+  *  bump persona (12e7f8d5)
+  *  update dependency nodebb-theme-persona to v11.2.1 (#9734) (2e1562b8)
+  *  update dependency nodebb-theme-vanilla to v12.1.2 (#9735) (4bd66a7c)
+  *  update dependency nodebb-theme-slick to v1.4.8 (#9732) (096c5a58)
+  *  update dependency autoprefixer to v10.3.2 (d44e3a8e)
+  *  update dependency nodebb-theme-persona to v11.2.0 (116f9cb5)
+  *  update dependency ioredis to v4.27.8 (8461791a)
+  *  update dependency nodebb-theme-persona to v11.1.3 (ec103ce8)
+  *  update dependency sharp to v0.29.0 (626d5565)
+  *  update dependency connect-mongo to v4.5.0 (ce6039f2)
+  *  update dependency nodebb-theme-vanilla to v12.1.1 (de83f82e)
+  *  update dependency nodebb-theme-persona to v11.1.2 (ee10ae04)
+  *  update dependency yargs to v17.1.1 (38e38580)
+  *  update dependency nodebb-theme-persona to v11.1.1 (47941418)
+  *  update dependency mongodb to v3.6.11 (a0fd0268)
+  *  update dependency yargs to v17.1.0 (181c20ba)
+  *  update dependency ioredis to v4.27.7 (4c9d6b62)
+  *  update theme versions for #9607 (3b34571d)
+  *  update dependency postcss to v8.3.6 (ebdba8f1)
+  *  update dependency html-to-text to v8 (3f24746c)
+  *  update dependency yargs to v17 (1b6b1fe5)
+  *  bump composer-default to v7 (51458c75)
+  *  update dependency autoprefixer to v10.3.1 (0d3f74b7)
+  *  update dependency nodebb-plugin-markdown to v8.14.2 (b6a84712)
+  *  update dependency autoprefixer to v10.3.0 (72c9650f)
+  *  update socket.io packages to v4.1.3 (f14df0d4)
+  *  update dependency nodebb-plugin-composer-default to v6.5.34 (31dae04f)
+  *  update dependency nodebb-theme-persona to v11.0.26 (ae14016e)
+  *  update dependency nodebb-plugin-markdown to v8.14.1 (8b41684e)
+* **emails:**
+  *  broken test for api/user/email/:email (81611ae1)
+  *  dont allow retrieving user data if showemail is false @julianlam (7d115c8e)
+  *  registration tests, email no longer passed-in, API tests (confirm email for test accounts) (6694bdd5)
+  *  don't automatically associate email during user creation if passed in at registration (e726048e)
+  *  remove debug log (b4b65ecd)
+  *  broken test due to sticky registration interstitial (ab9b6716)
+
+##### Refactors
+
+*  remove promisify from redis, ioredis supports promises nati… (#9728) (6659e95a)
+*  get rid of async.waterfall/each (8fb53252)
+*  remove unused async (42dbd402)
+*  remove waterfall (6b6a7d4b)
+*  move interstitials into its own file in `src/user/` (e95df2f0)
+*  added user.email.remove method, updated email interstitial to handle email removal (ccf004f1)
+*  client-side to use flag notes API (ef4e74bf)
+*  fix wording (6ed7e937)
+* **email:**  validation checking methods, +tests fix (087e6020)
+* **emails:**
+  *  more work in update email interstitial, interstitial skipping, email change on confirmation, deprecation of requireEmailConfirmation (69c96dd2)
+  *  interstitial for adding/updating email (f365bc46)
+  *  remove email validation on client and server side (7c1d1c77)
+
+##### Code Style Changes
+
+*  eslint (d2492ef4)
+*  lint fix (340ccb24)
+*  lint (52229172)
+
+##### Tests
+
+* **emails:**  fixing broken tests introduced by e5ff68acd (a3a3b10f)
+
+#### v1.17.2 (2021-07-07)
+
+##### Chores
+
+* **deps:**
+  *  update coverallsapp/github-action action to v1.1.3 (99c23037)
+  *  update dependency eslint to v7.30.0 (725e70e9)
+  *  update dependency coveralls to v3.1.1 (edefac96)
+  *  update dependency eslint to v7.29.0 (2700f717)
+  *  update dependency eslint to v7.28.0 (fac0bcbd)
+  *  update dependency smtp-server to v3.9.0 (86723292)
+  *  update dependency eslint-plugin-import to v2.23.4 (886d65f6)
+  *  update dependency eslint-plugin-import to v2.23.3 (c3b0e2fa)
+*  lint (2b42e7ed)
+*  fix indentation (d07229aa)
+*  up rewards (ca9ca876)
+*  incrementing version number - v1.17.1 (0aad1312)
+*  update changelog for v1.17.1 (1e6ed0ad)
+
+##### Documentation Changes
+
+*  add undoTimeout (2db77b0c)
+
+##### New Features
+
+*  add merge/fork hooks (c9348efb)
+*  #9628, allow setting custom icon names (2fe30b6f)
+*  #9617 update fa link (52596902)
+*  add bodyClass to 500 page (46a454f1)
+*  clear reset tokens on successful login (f9728aff)
+*  add filter:categories.categorySearch (be19f27f)
+*  allow nested properties on category page (#9601) (cc0cf99f)
+*  show ip on acp manage users (8ea58432)
+*  add undoTimeout to moving posts as well #9599 (e588948f)
+*  make undoTimeout configurable, closes #9599 (05cc7ccb)
+*  introduce boolean res.locals flag to bypass session reroll (used by session-sharing) (816856b0)
+*  allow modifying default category privileges (57e46e41)
+*  add filter:notifications.create (ac7b093f)
+*  pass req.query to getUnreadData (3d5fef6e)
+*  added GET user route for api v3 (d2960aeb)
+
+##### Bug Fixes
+
+* **docs:**  #9648 (e03782f2)
+* **deps:**
+  *  update dependency mongodb to v3.6.10 (f17625fb)
+  *  update dependency nodebb-theme-persona to v11.0.25 (c11927c5)
+  *  update dependency sortablejs to v1.14.0 (5ff9319f)
+  *  update dependency nodebb-theme-persona to v11.0.24 (c7feea56)
+  *  update dependency nodebb-plugin-composer-default to v6.5.33 (3611b04e)
+  *  update dependency nodebb-plugin-markdown to v8.14.0 (e40f648f)
+  *  update dependency nodebb-plugin-markdown to v8.13.1 (cf6fcc21)
+  *  update dependency nodebb-plugin-composer-default to v6.5.32 (#9626) (90e3f5ac)
+  *  update dependency nodebb-plugin-composer-default to v6.5.30 (#9624) (2060dc61)
+  *  update dependency postcss to v8.3.5 (09aebbda)
+  *  update dependency postcss to v8.3.4 (520050da)
+  *  update dependency postcss to v8.3.3 (c7006ec6)
+  *  update dependency ioredis to v4.27.6 (82b33dc4)
+  *  bump persona (f4eb336a)
+  *  update dependency postcss to v8.3.2 (88f21e91)
+  *  update dependency postcss to v8.3.1 (71b4d634)
+  *  update dependency ioredis to v4.27.5 (9f74caf6)
+  *  update dependency connect-redis to v6 (#9590) (6632b2b6)
+  *  update dependency ioredis to v4.27.4 (4ffd234f)
+  *  update dependency nodebb-theme-persona to v11.0.21 (062928d2)
+  *  update dependency mongodb to v3.6.9 (d8c64479)
+  *  update dependency autoprefixer to v10.2.6 (3aeac357)
+*  #9634, re-jig top bar of Admin > Manage > Users (b8964843)
+*  hide private user data in api/v3/users/[uid] (97c8569a)
+*  numThumb upgrade script (d9e2190a)
+*  acp dashboard sometimes not loading on cold load (fee782c4)
+*  #9636, sanitize all attributes in meta and link tags (84904976)
+*  convert some hooks to use hooks module (09bac6bd)
+*  #9627 (acdbd049)
+*  #9629, translate content property of meta tags (561ce7d3)
+*  prevent crash in expandObjBy #9618 (ab6f062f)
+*  dont show system tags in whitelist dropdown to regular users (0d975bc4)
+*  #9622 (#9623) (84e06575)
+*  #9620, fix notif delay (73f40e96)
+*  #9619, add group chat filter to /notifications (c92fc19b)
+*  scope (3cd9434b)
+*  #9615, catch exceptions in renderOverride (1eda538d)
+*  purge uploaded images accordingly #9606 (#9611) (8168c6c4)
+*  keep query params when switching chat (7b4c0a16)
+*  accidental unnecessarily strict conditional that effectively rendered SSO state checking opt-in instead of opt-out (a2400f6b)
+*  introduce artificial delay + delay fudging on invalid email during reset token generation (f6c14d6b)
+*  #9605, expire all active reset tokens for a uid if that uid generates a new one (229f96f8)
+*  lint (8c952aa3)
+*  schema (39e13591)
+*  pagination on acp users search (6695927e)
+*  #9596, incorrect placeholder string in some translations (93d94564)
+*  extra ')' (6f732611)
+*  disallow editing of other users' notes (edcba61a)
+*  #9592, check session (286644d0)
+*  don't crash if session doesn't exist (3717df61)
+*  lint (66cae54e)
+*  improper use of filename extensions (16e0bca5)
+*  return null (d8d6c989)
+*  updates navigation menu user icon (f9b248b8)
+*  returnOriginal deprecation (3fb74445)
+*  error when trying to trim an object (48b8e3bb)
+* **post-queue:**  moderatedCids is an array of numbers (#9631) (db65360c)
+
+##### Performance Improvements
+
+*  cache Topics.getTopicsTags (8e0561f2)
+*  bypass getMultipleUserSettings (10ddfff3)
+
+##### Tests
+
+*  fixed broken tests from #9605, removed token clean on token usage as it is superceded by token clean on generation (+ associated test) (5c42b3ea)
+
+#### v1.17.1 (2021-05-26)
+
+##### Chores
+
+* **deps:**
+  *  update dependency grunt to v1.4.1 (0e37bbfd)
+  *  update dependency jsdom to v16.6.0 (60170ad6)
+  *  update dependency eslint to v7.27.0 (298af98d)
+  *  update dependency eslint-plugin-import to v2.23.0 (1623ba4f)
+  *  update commitlint monorepo to v12.1.4 (4a01313d)
+  *  update commitlint monorepo to v12.1.3 (b82774c5)
+  *  update dependency eslint to v7.26.0 (d1418210)
+  *  update dependency lint-staged to v11 (1bf57d40)
+  *  update dependency mocha to v8.4.0 (461e187b)
+  *  update dependency eslint to v7.25.0 (32c20806)
+  *  update dependency grunt to v1.4.0 (a30deef3)
+*  incrementing version number - v1.17.0 (75f7972b)
+*  update changelog for v1.17.0 (4c441a1b)
+
+##### Documentation Changes
+
+*  update API docs to better outline authentication options (6ef0c8e9)
+*  update API authentication verbiage (d08d0c42)
+
+##### New Features
+
+*  keep query string when redirecting category (77dde41f)
+*  add req.query to flags.list/getCount (3d6bdeb3)
+*  add filter:flags.getFlagIdsWithFilters (d35c64b1)
+*  #9559, set order help text (f5847f4f)
+*  add filter:user.getWatchedCategories (4afca690)
+*  pass req.query to getUserDataByUserSlug (518157d9)
+*  #9508, add cluster support (94c12e37)
+*  #9551 (a3d6c56e)
+*  add template to hook (1f3e6601)
+*  add filter:account.getPostsFromUserSet (a2442ee9)
+*  automatically attempt reconnection on window focus (8cc61f11)
+*  #9533, allow redirect in build hooks (f6b583bb)
+*  add _hooks metadata object to all hooks that have object-type params (46899cca)
+*  add filter:categories.copySettingsFrom (d8e4fd4c)
+*  guard against multiple resolves (084c9851)
+*  #9511 send notifications on accept/reject (b40fc4b6)
+*  `hidden` class to FOUC (2bfa63ae)
+*  add filter:middleware.autoLocale (a478dc7e)
+*  remove sync hooks support (01956af4)
+
+##### Bug Fixes
+
+*  #9580, proper 404 when ajaxifying (9ebfdeb7)
+*  lint (09f51792)
+*  #9567 fix tests (951e71a0)
+*  #9567, use regular 404 (5215c30a)
+*  ioredis upgrade fix, maybe (1ce59508)
+*  bug where interstitial errors were not properly passed to the front-end via req.flash (1d9cfe1e)
+*  #9553, use same fields for user search results in acp (0551642a)
+*  lint (e8c5c18a)
+*  lint (ffa80163)
+*  tests (fad5988e)
+*  tests (074ee859)
+*  wrong error message checked (a9bb1088)
+*  #9507 session reroll causes socket.io to become confused (#9534) (ec6d1e23)
+*  isObjectField(s) empty field (2c22b06f)
+*  do not register SW for Safari until upstream fixes #9193 (ce5fea2a)
+*  infinite scroll with small number of items #9524 (#9525) (cb1dd0a3)
+*  #9519 unable to properly ajaxify to home on subfolder installs if anchor did not have a trailing slash (db48b952)
+*  #9512, fix chat icon if no privileges (6ed8890c)
+*  #9503, dont error in markUnread if room doesnt exist (308252f5)
+*  use socket.request.headers (9e07efc1)
+*  buildReqObject headers for socket.io calls (ed534f34)
+* **deps:**
+  *  update dependency sharp to v0.28.3 (963a9fe6)
+  *  update dependency ioredis to v4.27.3 (075dab27)
+  *  update dependency nodebb-theme-vanilla to v12.0.8 (#9574) (10290f54)
+  *  update dependency mongodb to v3.6.8 (#9573) (64935787)
+  *  update dependency postcss to v8.3.0 (ad4afd59)
+  *  update dependency nodebb-theme-persona to v11.0.20 (403bcfac)
+  *  update dependency nodebb-plugin-composer-default to v6.5.29 (8d7e4420)
+  *  update dependency mongodb to v3.6.7 (f29e4e87)
+  *  update dependency textcomplete to ^0.18.0 (9b7653cc)
+  *  update socket.io packages to v4.1.2 (#9563) (ca7c77bc)
+  *  update dependency nodebb-plugin-dbsearch to v5.0.2 (#9562) (2d0564cb)
+  *  update dependency nodebb-theme-slick to v1.4.7 (bf4aa50c)
+  *  update dependency nodebb-plugin-composer-default to v6.5.28 (4164b322)
+  *  update socket.io packages to v4.1.1 (155a7fb6)
+  *  update socket.io packages to v4.1.0 (53335677)
+  *  update dependency sharp to v0.28.2 (4bc07a08)
+  *  update dependency postcss to v8.2.15 (7770c2a1)
+  *  update dependency nodebb-theme-persona to v11.0.19 (3145c7d5)
+  *  update dependency nodebb-plugin-mentions to v2.13.11 (7e2ea4df)
+  *  update dependency nodebb-plugin-markdown to v8.12.10 (2ac5a085)
+  *  update dependency nodebb-plugin-markdown to v8.12.9 (ee3634cc)
+  *  update socket.io packages to v4.0.2 (ff98f854)
+  *  update dependency postcss to v8.2.14 (22ec1ea5)
+  *  update dependency sitemap to v7 (0389dd96)
+  *  update dependency nodebb-widget-essentials to v5.0.4 (19f1cbfc)
+  *  update dependency nodebb-theme-persona to v11.0.18 (33d91fde)
+  *  update dependency connect-redis to v5.2.0 (c0d54a06)
+  *  update dependency postcss to v8.2.13 (831e5c26)
+  *  update dependency postcss to v8.2.12 (38454df9)
+* **#9508:**  switch to ioredis (#9545) (dd81dd03)
+
+##### Refactors
+
+*  cli/upgrade async/await (#9558) (ac86937c)
+*  bubble other errors (0096cf17)
+
+##### Reverts
+
+*  sync hooks (5fe97b9c)
+
+##### Tests
+
+*  fix tests (1029a06a)
+*  fix redis tests (4e490f60)
+*  add test for undefined fields in getObjectsFields (92de49be)
+
 #### v1.17.0 (2021-04-22)
 
 ##### Breaking Changes

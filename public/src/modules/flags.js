@@ -1,7 +1,7 @@
 'use strict';
 
 
-define('flags', ['hooks', 'components'], function (hooks, components) {
+define('flags', ['hooks', 'components', 'api'], function (hooks, components, api) {
 	var Flag = {};
 	var flagModal;
 	var flagCommit;
@@ -18,38 +18,33 @@ define('flags', ['hooks', 'components'], function (hooks, components) {
 			flagCommit = flagModal.find('#flag-post-commit');
 			flagReason = flagModal.find('#flag-reason-custom');
 
-			// Quick-report buttons
-			flagModal.on('click', '.flag-reason', function () {
-				var reportText = $(this).text();
-
-				if (flagReason.val().length === 0) {
-					return createFlag(data.type, data.id, reportText);
+			flagModal.on('click', 'input[name="flag-reason"]', function () {
+				if ($(this).attr('id') === 'flag-reason-other') {
+					flagReason.removeAttr('disabled');
+					if (!flagReason.val().length) {
+						flagCommit.attr('disabled', true);
+					}
+				} else {
+					flagReason.attr('disabled', true);
+					flagCommit.removeAttr('disabled');
 				}
-
-				// Custom reason has text, confirm submission
-				bootbox.confirm({
-					title: '[[flags:modal-submit-confirm]]',
-					message: '<p>[[flags:modal-submit-confirm-text]]</p><p class="help-block">[[flags:modal-submit-confirm-text-help]]</p>',
-					callback: function (result) {
-						if (result) {
-							createFlag(data.type, data.id, reportText);
-						}
-					},
-				});
 			});
 
-			// Custom reason report submission
 			flagCommit.on('click', function () {
-				createFlag(data.type, data.id, flagModal.find('#flag-reason-custom').val());
+				var selected = $('input[name="flag-reason"]:checked');
+				var reason = selected.val();
+				if (selected.attr('id') === 'flag-reason-other') {
+					reason = flagReason.val();
+				}
+				createFlag(data.type, data.id, reason);
 			});
 
-			flagModal.on('click', '.toggle-custom', function () {
-				flagReason.prop('disabled', false);
+			flagModal.on('click', '#flag-reason-other', function () {
 				flagReason.focus();
 			});
 
 			flagModal.modal('show');
-			$(window).trigger('action:flag.showModal', {
+			hooks.fire('action:flag.showModal', {
 				modalEl: flagModal,
 				type: data.type,
 				id: data.id,
@@ -60,18 +55,12 @@ define('flags', ['hooks', 'components'], function (hooks, components) {
 	};
 
 	Flag.resolve = function (flagId) {
-		socket.emit('flags.update', {
-			flagId: flagId,
-			data: [
-				{ name: 'state', value: 'resolved' },
-			],
-		}, function (err) {
-			if (err) {
-				return app.alertError(err.message);
-			}
+		api.put(`/flags/${flagId}`, {
+			state: 'resolved',
+		}).then(() => {
 			app.alertSuccess('[[flags:resolved]]');
 			hooks.fire('action:flag.resolved', { flagId: flagId });
-		});
+		}).catch(app.alertError);
 	};
 
 	function createFlag(type, id, reason) {
@@ -79,7 +68,7 @@ define('flags', ['hooks', 'components'], function (hooks, components) {
 			return;
 		}
 		var data = { type: type, id: id, reason: reason };
-		socket.emit('flags.create', data, function (err, flagId) {
+		api.post('/flags', data, function (err, flagId) {
 			if (err) {
 				return app.alertError(err.message);
 			}
@@ -91,7 +80,7 @@ define('flags', ['hooks', 'components'], function (hooks, components) {
 				postEl.find('[component="post/flag"]').addClass('hidden').parent().attr('hidden', '');
 				postEl.find('[component="post/already-flagged"]').removeClass('hidden').parent().attr('hidden', null);
 			}
-			$(window).trigger('action:flag.create', { flagId: flagId, data: data });
+			hooks.fire('action:flag.create', { flagId: flagId, data: data });
 		});
 	}
 

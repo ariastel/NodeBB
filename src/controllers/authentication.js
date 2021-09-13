@@ -1,6 +1,5 @@
 'use strict';
 
-const async = require('async');
 const winston = require('winston');
 const passport = require('passport');
 const nconf = require('nconf');
@@ -23,8 +22,13 @@ const sockets = require('../socket.io');
 const authenticationController = module.exports;
 
 async function registerAndLoginUser(req, res, userData) {
+	if (!userData.hasOwnProperty('email')) {
+		userData.updateEmail = true;
+	}
+
 	const data = await plugins.hooks.fire('filter:register.interstitial', {
-		userData: userData,
+		req,
+		userData,
 		interstitials: [],
 	});
 
@@ -55,17 +59,18 @@ async function registerAndLoginUser(req, res, userData) {
 
 	// Distinguish registrations through invites from direct ones
 	if (userData.token) {
-		await user.joinGroupsFromInvitation(uid, userData.email);
+		// Token has to be verified at this point
+		await Promise.all([
+			user.confirmIfInviteEmailIsUsed(userData.token, userData.email, uid),
+			user.joinGroupsFromInvitation(uid, userData.token),
+		]);
 	}
-	await user.deleteInvitationKey(userData.email);
+	await user.deleteInvitationKey(userData.email, userData.token);
 	const next = req.session.returnTo || `${nconf.get('relative_path')}/`;
 	const complete = await plugins.hooks.fire('filter:register.complete', { uid: uid, next: next });
 	req.session.returnTo = complete.next;
 	return complete;
 }
-
-const registerAndLoginUserCallback = util.callbackify(registerAndLoginUser);
-
 
 authenticationController.register = async function (req, res) {
 	const registrationType = meta.config.registrationType || 'normal';
@@ -78,10 +83,6 @@ authenticationController.register = async function (req, res) {
 	try {
 		if (userData.token || registrationType === 'invite-only' || registrationType === 'admin-invite-only') {
 			await user.verifyInvitation(userData);
-		}
-
-		if (!userData.email) {
-			throw new Error('[[error:invalid-email]]');
 		}
 
 		if (
@@ -137,15 +138,14 @@ async function addToApprovalQueue(req, userData) {
 	return { message: message };
 }
 
-authenticationController.registerComplete = function (req, res, next) {
-	// For the interstitials that respond, execute the callback with the form body
-	plugins.hooks.fire('filter:register.interstitial', {
-		userData: req.session.registration,
-		interstitials: [],
-	}, async (err, data) => {
-		if (err) {
-			return next(err);
-		}
+authenticationController.registerComplete = async function (req, res) {
+	try {
+		// For the interstitials that respond, execute the callback with the form body
+		const data = await plugins.hooks.fire('filter:register.interstitial', {
+			req,
+			userData: req.session.registration,
+			interstitials: [],
+		});
 
 		const callbacks = data.interstitials.reduce((memo, cur) => {
 			if (cur.hasOwnProperty('callback') && typeof cur.callback === 'function') {
@@ -163,13 +163,10 @@ authenticationController.registerComplete = function (req, res, next) {
 			return memo;
 		}, []);
 
-		const done = function (err, data) {
+		const done = function (data) {
 			delete req.session.registration;
-			if (err) {
-				return res.redirect(`${nconf.get('relative_path')}/?register=${encodeURIComponent(err.message)}`);
-			}
 
-			if (!err && data && data.message) {
+			if (data && data.message) {
 				return res.redirect(`${nconf.get('relative_path')}/?register=${encodeURIComponent(data.message)}`);
 			}
 
@@ -191,7 +188,13 @@ authenticationController.registerComplete = function (req, res, next) {
 
 		if (req.session.registration.register === true) {
 			res.locals.processLogin = true;
-			registerAndLoginUserCallback(req, res, req.session.registration, done);
+			req.body.noscript = 'true';	// trigger full page load on error
+
+			const data = await registerAndLoginUser(req, res, req.session.registration);
+			if (!data) {
+				return winston.warn('[register] Interstitial callbacks processed with no errors, but one or more interstitials remain. This is likely an issue with one of the interstitials not properly handling a null case or invalid value.');
+			}
+			done(data);
 		} else {
 			// Update user hash, clear registration data in session
 			const payload = req.session.registration;
@@ -208,15 +211,24 @@ authenticationController.registerComplete = function (req, res, next) {
 			await user.setUserFields(uid, payload);
 			done();
 		}
-	});
+	} catch (err) {
+		delete req.session.registration;
+		res.redirect(`${nconf.get('relative_path')}/?register=${encodeURIComponent(err.message)}`);
+	}
 };
 
 authenticationController.registerAbort = function (req, res) {
-	// End the session and redirect to home
-	req.session.destroy(() => {
-		res.clearCookie(nconf.get('sessionKey'), meta.configs.cookie.get());
-		res.redirect(`${nconf.get('relative_path')}/`);
-	});
+	if (req.uid) {
+		// Clear interstitial data and continue on...
+		delete req.session.registration;
+		res.redirect(nconf.get('relative_path') + req.session.returnTo);
+	} else {
+		// End the session and redirect to home
+		req.session.destroy(() => {
+			res.clearCookie(nconf.get('sessionKey'), meta.configs.cookie.get());
+			res.redirect(`${nconf.get('relative_path')}/`);
+		});
+	}
 };
 
 authenticationController.login = async (req, res, next) => {
@@ -232,31 +244,29 @@ authenticationController.login = async (req, res, next) => {
 
 	const loginWith = meta.config.allowLoginWith || 'username-email';
 	req.body.username = req.body.username.trim();
-
-	plugins.hooks.fire('filter:login.check', { req: req, res: res, userData: req.body }, (err) => {
-		if (err) {
-			return (res.locals.noScriptErrors || helpers.noScriptErrors)(req, res, err.message, 403);
+	const errorHandler = res.locals.noScriptErrors || helpers.noScriptErrors;
+	try {
+		await plugins.hooks.fire('filter:login.check', { req: req, res: res, userData: req.body });
+	} catch (err) {
+		return errorHandler(req, res, err.message, 403);
+	}
+	try {
+		const isEmailLogin = loginWith.includes('email') && req.body.username && utils.isEmailValid(req.body.username);
+		const isUsernameLogin = loginWith.includes('username') && !validator.isEmail(req.body.username);
+		if (isEmailLogin) {
+			const username = await user.getUsernameByEmail(req.body.username);
+			if (username !== '[[global:guest]]') {
+				req.body.username = username;
+			}
 		}
-		if (req.body.username && utils.isEmailValid(req.body.username) && loginWith.includes('email')) {
-			async.waterfall([
-				function (next) {
-					user.getUsernameByEmail(req.body.username, next);
-				},
-				function (username, next) {
-					if (username !== '[[global:guest]]') {
-						req.body.username = username;
-					}
-
-					(res.locals.continueLogin || continueLogin)(strategy, req, res, next);
-				},
-			], next);
-		} else if (loginWith.includes('username') && !validator.isEmail(req.body.username)) {
+		if (isEmailLogin || isUsernameLogin) {
 			(res.locals.continueLogin || continueLogin)(strategy, req, res, next);
 		} else {
-			err = `[[error:wrong-login-type-${loginWith}]]`;
-			(res.locals.noScriptErrors || helpers.noScriptErrors)(req, res, err, 400);
+			errorHandler(req, res, `[[error:wrong-login-type-${loginWith}]]`, 400);
 		}
-	});
+	} catch (err) {
+		return errorHandler(req, res, err.message, 500);
+	}
 };
 
 function continueLogin(strategy, req, res, next) {
@@ -326,12 +336,16 @@ authenticationController.doLogin = async function (req, uid) {
 		return;
 	}
 	const loginAsync = util.promisify(req.login).bind(req);
-	const regenerateSession = util.promisify(req.session.regenerate).bind(req.session);
 
-	const sessionData = { ...req.session };
-	await regenerateSession();
-	for (const [prop, value] of Object.entries(sessionData)) {
-		req.session[prop] = value;
+	const { reroll } = req.res.locals;
+	if (reroll !== false) {
+		const regenerateSession = util.promisify(req.session.regenerate).bind(req.session);
+
+		const sessionData = { ...req.session };
+		await regenerateSession();
+		for (const [prop, value] of Object.entries(sessionData)) {
+			req.session[prop] = value;
+		}
 	}
 
 	await loginAsync({ uid: uid });
@@ -356,6 +370,7 @@ authenticationController.onSuccessfulLogin = async function (req, uid) {
 		await meta.blacklist.test(req.ip);
 		await user.logIP(uid, req.ip);
 		await user.bans.unbanIfExpired([uid]);
+		await user.reset.cleanByUid(uid);
 
 		req.session.meta = {};
 

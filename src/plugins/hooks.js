@@ -8,7 +8,7 @@ const utils = require('../utils');
 const Hooks = module.exports;
 
 Hooks.deprecatedHooks = {
-	'filter:email.send': 'static:email.send',	// 👋 @ 1.18.0
+	'filter:email.send': 'static:email.send',	// 👋 @ 1.19.0
 	'filter:router.page': 'response:router.page',	// 👋 @ 2.0.0
 };
 
@@ -95,6 +95,10 @@ Hooks.fire = async function (hook, params) {
 	if (!hookTypeToMethod[hookType]) {
 		winston.warn(`[plugins] Unknown hookType: ${hookType}, hook : ${hook}`);
 		return;
+	}
+	if (params && typeof params === 'object' && !params.hasOwnProperty('caller')) {
+		const als = require('../als');
+		params.caller = als.getStore();
 	}
 	const result = await hookTypeToMethod[hookType](hook, hookList, params);
 

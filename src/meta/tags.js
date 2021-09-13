@@ -66,6 +66,7 @@ Tags.parse = async (req, data, meta, link) => {
 	}, {
 		rel: 'manifest',
 		href: `${relative_path}/manifest.webmanifest`,
+		crossorigin: `use-credentials`,
 	}];
 
 	if (plugins.hooks.hasListeners('filter:search.query')) {
@@ -154,7 +155,10 @@ Tags.parse = async (req, data, meta, link) => {
 		}
 
 		if (!tag.noEscape) {
-			tag.content = utils.escapeHTML(String(tag.content));
+			const attributes = Object.keys(tag);
+			attributes.forEach((attr) => {
+				tag[attr] = utils.escapeHTML(String(tag[attr]));
+			});
 		}
 
 		return tag;
@@ -168,12 +172,18 @@ Tags.parse = async (req, data, meta, link) => {
 	addIfNotExists(meta, 'name', 'description', Meta.config.description);
 	addIfNotExists(meta, 'property', 'og:description', Meta.config.description);
 
-	link = results.links.links.concat(link || []);
+	link = results.links.links.concat(link || []).map((tag) => {
+		if (!tag.noEscape) {
+			const attributes = Object.keys(tag);
+			attributes.forEach((attr) => {
+				tag[attr] = utils.escapeHTML(String(tag[attr]));
+			});
+		}
 
-	return {
-		meta: meta,
-		link: link,
-	};
+		return tag;
+	});
+
+	return { meta, link };
 };
 
 function addIfNotExists(meta, keyName, tagName, value) {

@@ -10,6 +10,7 @@ const db = require('../database');
 const meta = require('../meta');
 const emailer = require('../emailer');
 const groups = require('../groups');
+const events = require('../events');
 
 const UserEmail = module.exports;
 
@@ -21,6 +22,44 @@ UserEmail.exists = async function (email) {
 UserEmail.available = async function (email) {
 	const exists = await db.isSortedSetMember('email:uid', email.toLowerCase());
 	return !exists;
+};
+
+UserEmail.remove = async function (uid, sessionId) {
+	const email = await user.getUserField(uid, 'email');
+	if (!email) {
+		return;
+	}
+
+	await Promise.all([
+		user.setUserFields(uid, {
+			email: '',
+			'email:confirmed': 0,
+		}),
+		db.sortedSetRemove('email:uid', email.toLowerCase()),
+		db.sortedSetRemove('email:sorted', `${email.toLowerCase()}:${uid}`),
+		user.email.expireValidation(uid),
+		user.auth.revokeAllSessions(uid, sessionId),
+		events.log({ type: 'email-change', email, newEmail: '' }),
+	]);
+};
+
+UserEmail.isValidationPending = async (uid, email) => {
+	const code = await db.get(`confirm:byUid:${uid}`);
+
+	if (email) {
+		const confirmObj = await db.getObject(`confirm:${code}`);
+		return confirmObj && email === confirmObj.email;
+	}
+
+	return !!code;
+};
+
+UserEmail.expireValidation = async (uid) => {
+	const code = await db.get(`confirm:byUid:${uid}`);
+	await db.deleteAll([
+		`confirm:byUid:${uid}`,
+		`confirm:${code}`,
+	]);
 };
 
 UserEmail.sendValidationEmail = async function (uid, options) {
@@ -53,13 +92,15 @@ UserEmail.sendValidationEmail = async function (uid, options) {
 	}
 	let sent = false;
 	if (!options.force) {
-		sent = await db.get(`uid:${uid}:confirm:email:sent`);
+		sent = await UserEmail.isValidationPending(uid, options.email);
 	}
 	if (sent) {
 		throw new Error(`[[error:confirm-email-already-sent, ${emailInterval}]]`);
 	}
-	await db.set(`uid:${uid}:confirm:email:sent`, 1);
-	await db.pexpireAt(`uid:${uid}:confirm:email:sent`, Date.now() + (emailInterval * 60 * 1000));
+
+	await UserEmail.expireValidation(uid);
+	await db.set(`confirm:byUid:${uid}`, confirm_code);
+	await db.pexpireAt(`confirm:byUid:${uid}`, Date.now() + (emailInterval * 60 * 1000));
 	confirm_code = await plugins.hooks.fire('filter:user.verify.code', confirm_code);
 
 	await db.setObject(`confirm:${confirm_code}`, {
@@ -69,14 +110,22 @@ UserEmail.sendValidationEmail = async function (uid, options) {
 	await db.expireAt(`confirm:${confirm_code}`, Math.floor((Date.now() / 1000) + (60 * 60 * 24)));
 	const username = await user.getUserField(uid, 'username');
 
-	const data = {
-		username: username,
-		confirm_link: confirm_link,
-		confirm_code: confirm_code,
+	events.log({
+		type: 'email-confirmation-sent',
+		uid,
+		confirm_code,
+		...options,
+	});
 
-		subject: options.subject || `[[email:welcome-to, ${meta.config.title || meta.config.browserTitle || 'NodeBB'}]]`,
-		template: options.template || 'welcome',
-		uid: uid,
+	const data = {
+		uid,
+		username,
+		confirm_link,
+		confirm_code,
+		email: options.email,
+
+		subject: options.subject || '[[email:email.verify-your-email.subject]]',
+		template: options.template || 'verify-email',
 	};
 
 	if (plugins.hooks.hasListeners('action:user.verify')) {
@@ -88,20 +137,28 @@ UserEmail.sendValidationEmail = async function (uid, options) {
 };
 
 // confirm email by code sent by confirmation email
-UserEmail.confirmByCode = async function (code) {
+UserEmail.confirmByCode = async function (code, sessionId) {
 	const confirmObj = await db.getObject(`confirm:${code}`);
 	if (!confirmObj || !confirmObj.uid || !confirmObj.email) {
 		throw new Error('[[error:invalid-data]]');
 	}
-	const currentEmail = await user.getUserField(confirmObj.uid, 'email');
-	if (!currentEmail || currentEmail.toLowerCase() !== confirmObj.email) {
-		throw new Error('[[error:invalid-email]]');
+
+	const oldEmail = await user.getUserField(confirmObj.uid, 'email');
+	if (oldEmail && confirmObj.email !== oldEmail) {
+		await UserEmail.remove(confirmObj.uid, sessionId);
+	} else {
+		await user.auth.revokeAllSessions(confirmObj.uid, sessionId);
 	}
-	await UserEmail.confirmByUid(confirmObj.uid);
-	await db.delete(`confirm:${code}`);
+
+	await user.setUserField(confirmObj.uid, 'email', confirmObj.email);
+	await Promise.all([
+		UserEmail.confirmByUid(confirmObj.uid),
+		db.delete(`confirm:${code}`),
+		events.log({ type: 'email-change', oldEmail, newEmail: confirmObj.email }),
+	]);
 };
 
-// confirm uid's email
+// confirm uid's email via ACP
 UserEmail.confirmByUid = async function (uid) {
 	if (!(parseInt(uid, 10) > 0)) {
 		throw new Error('[[error:invalid-uid]]');
@@ -110,11 +167,18 @@ UserEmail.confirmByUid = async function (uid) {
 	if (!currentEmail) {
 		throw new Error('[[error:invalid-email]]');
 	}
+
 	await Promise.all([
+		db.sortedSetAddBulk([
+			['email:uid', uid, currentEmail.toLowerCase()],
+			['email:sorted', 0, `${currentEmail.toLowerCase()}:${uid}`],
+			[`user:${uid}:emails`, Date.now(), `${currentEmail}:${Date.now()}`],
+		]),
 		user.setUserField(uid, 'email:confirmed', 1),
 		groups.join('verified-users', uid),
 		groups.leave('unverified-users', uid),
-		db.delete(`uid:${uid}:confirm:email:sent`),
+		user.email.expireValidation(uid),
+		user.reset.cleanByUid(uid),
 	]);
 	await plugins.hooks.fire('action:user.email.confirmed', { uid: uid, email: currentEmail });
 };

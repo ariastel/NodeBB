@@ -50,21 +50,6 @@ module.exports = function (Categories) {
 			category.backgroundImage = data.backgroundImage;
 		}
 
-		const result = await plugins.hooks.fire('filter:category.create', { category: category, data: data });
-		category = result.category;
-
-
-		await db.setObject(`category:${category.cid}`, category);
-		if (!category.descriptionParsed) {
-			await Categories.parseDescription(category.cid, category.description);
-		}
-
-		await db.sortedSetAddBulk([
-			['categories:cid', category.order, category.cid],
-			[`cid:${parentCid}:children`, category.order, category.cid],
-			['categories:name', 0, `${data.name.substr(0, 200).toLowerCase()}:${category.cid}`],
-		]);
-
 		const defaultPrivileges = [
 			'groups:find',
 			'groups:read',
@@ -84,9 +69,31 @@ module.exports = function (Categories) {
 			'groups:posts:view_deleted',
 			'groups:purge',
 		]);
-		await privileges.categories.give(defaultPrivileges, category.cid, 'registered-users');
-		await privileges.categories.give(modPrivileges, category.cid, ['administrators', 'Global Moderators']);
-		await privileges.categories.give(['groups:find', 'groups:read', 'groups:topics:read'], category.cid, ['guests', 'spiders']);
+		const guestPrivileges = ['groups:find', 'groups:read', 'groups:topics:read'];
+
+		const result = await plugins.hooks.fire('filter:category.create', {
+			category: category,
+			data: data,
+			defaultPrivileges: defaultPrivileges,
+			modPrivileges: modPrivileges,
+			guestPrivileges: guestPrivileges,
+		});
+		category = result.category;
+
+		await db.setObject(`category:${category.cid}`, category);
+		if (!category.descriptionParsed) {
+			await Categories.parseDescription(category.cid, category.description);
+		}
+
+		await db.sortedSetAddBulk([
+			['categories:cid', category.order, category.cid],
+			[`cid:${parentCid}:children`, category.order, category.cid],
+			['categories:name', 0, `${data.name.substr(0, 200).toLowerCase()}:${category.cid}`],
+		]);
+
+		await privileges.categories.give(result.defaultPrivileges, category.cid, 'registered-users');
+		await privileges.categories.give(result.modPrivileges, category.cid, ['administrators', 'Global Moderators']);
+		await privileges.categories.give(result.guestPrivileges, category.cid, ['guests', 'spiders']);
 
 		cache.del([
 			'categories:cid',
@@ -192,13 +199,19 @@ module.exports = function (Categories) {
 		cache.del(`cid:${toCid}:tag:whitelist`);
 	}
 
-	Categories.copyPrivilegesFrom = async function (fromCid, toCid, group) {
+	Categories.copyPrivilegesFrom = async function (fromCid, toCid, group, filter = []) {
 		group = group || '';
+		let privsToCopy;
+		if (group) {
+			privsToCopy = privileges.categories.groupPrivilegeList.slice(...filter);
+		} else {
+			const privs = privileges.categories.privilegeList.slice();
+			const halfIdx = privs.length / 2;
+			privsToCopy = privs.slice(0, halfIdx).slice(...filter).concat(privs.slice(halfIdx).slice(...filter));
+		}
 
 		const data = await plugins.hooks.fire('filter:categories.copyPrivilegesFrom', {
-			privileges: group ?
-				privileges.categories.groupPrivilegeList.slice() :
-				privileges.categories.privilegeList.slice(),
+			privileges: privsToCopy,
 			fromCid: fromCid,
 			toCid: toCid,
 			group: group,

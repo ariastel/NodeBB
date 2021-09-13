@@ -18,6 +18,11 @@ app.cacheBuster = null;
 
 	app.cacheBuster = config['cache-buster'];
 
+	var hooks;
+	require(['hooks'], function (_hooks) {
+		hooks = _hooks;
+	});
+
 	$(document).ready(function () {
 		ajaxify.parseData();
 		app.load();
@@ -93,7 +98,6 @@ app.cacheBuster = null;
 		});
 
 		createHeaderTooltips();
-		app.showEmailConfirmWarning();
 		app.showCookieWarning();
 		registerServiceWorker();
 
@@ -118,7 +122,7 @@ app.cacheBuster = null;
 				unread.initUnreadTopics();
 			}
 			function finishLoad() {
-				$(window).trigger('action:app.load');
+				hooks.fire('action:app.load');
 				app.showMessages();
 				appLoaded = true;
 			}
@@ -131,9 +135,23 @@ app.cacheBuster = null;
 		});
 	};
 
+	app.require = async (modules) => {	// allows you to await require.js modules
+		let single = false;
+		if (!Array.isArray(modules)) {
+			modules = [modules];
+			single = true;
+		}
+
+		return new Promise((resolve, reject) => {
+			require(modules, (...exports) => {
+				resolve(single ? exports.pop() : exports);
+			}, reject);
+		});
+	};
+
 	app.logout = function (redirect) {
 		redirect = redirect === undefined ? true : redirect;
-		$(window).trigger('action:app.logout');
+		hooks.fire('action:app.logout');
 
 		$.ajax(config.relative_path + '/logout', {
 			type: 'POST',
@@ -144,7 +162,7 @@ app.cacheBuster = null;
 				app.flags._logout = true;
 			},
 			success: function (data) {
-				$(window).trigger('action:app.loggedOut', data);
+				hooks.fire('action:app.loggedOut', data);
 				if (redirect) {
 					if (data.next) {
 						window.location.href = data.next;
@@ -465,7 +483,7 @@ app.cacheBuster = null;
 			return;
 		}
 		/* eslint-disable-next-line */
-		var searchOptions = Object.assign({ in: 'titles' }, options.searchOptions);
+		var searchOptions = Object.assign({ in: config.searchDefaultInQuick || 'titles' }, options.searchOptions);
 		var quickSearchResults = options.searchElements.resultEl;
 		var inputEl = options.searchElements.inputEl;
 		var searchTimeoutId = 0;
@@ -500,7 +518,7 @@ app.cacheBuster = null;
 
 				quickSearchResults.removeClass('hidden').find('.quick-search-results-container').html('');
 				quickSearchResults.find('.loading-indicator').removeClass('hidden');
-				$(window).trigger('action:search.quick.start', options);
+				hooks.fire('action:search.quick.start', options);
 				options.searchOptions.searchOnly = 1;
 				search.api(options.searchOptions, function (data) {
 					quickSearchResults.find('.loading-indicator').addClass('hidden');
@@ -525,7 +543,7 @@ app.cacheBuster = null;
 							'.quick-search-results .quick-search-title, .quick-search-results .snippet'
 						);
 						search.highlightMatches(options.searchOptions.term, highlightEls);
-						$(window).trigger('action:search.quick.complete', {
+						hooks.fire('action:search.quick.complete', {
 							data: data,
 							options: options,
 						});
@@ -590,7 +608,7 @@ app.cacheBuster = null;
 	};
 
 	app.handleSearch = function (searchOptions) {
-		searchOptions = searchOptions || { in: 'titles' };
+		searchOptions = searchOptions || { in: config.searchDefaultInQuick || 'titles' };
 		var searchButton = $('#search-button');
 		var searchFields = $('#search-fields');
 		var searchInput = $('#search-fields input');
@@ -645,7 +663,7 @@ app.cacheBuster = null;
 			require(['search'], function (search) {
 				var data = search.getSearchPreferences();
 				data.term = input.val();
-				$(window).trigger('action:search.submit', {
+				hooks.fire('action:search.submit', {
 					searchOptions: data,
 					searchElements: searchElements,
 				});
@@ -713,7 +731,7 @@ app.cacheBuster = null;
 	};
 
 	app.newTopic = function (cid, tags) {
-		$(window).trigger('action:composer.topic.new', {
+		hooks.fire('action:composer.topic.new', {
 			cid: cid || ajaxify.data.cid || 0,
 			tags: tags || (ajaxify.data.tag ? [ajaxify.data.tag] : []),
 		});
@@ -737,21 +755,43 @@ app.cacheBuster = null;
 		});
 	};
 
-	app.showEmailConfirmWarning = function (err) {
-		if (!config.requireEmailConfirmation || !app.user.uid) {
+	app.showEmailConfirmWarning = async (err) => {
+		const storage = await app.require('storage');
+
+		let showModal = false;
+		switch (ajaxify.data.template.name) {
+			case 'recent': {
+				showModal = !ajaxify.data.canPost;
+				break;
+			}
+
+			case 'category': {
+				showModal = !ajaxify.data.privileges['topics:create'];
+				break;
+			}
+
+			case 'topic': {
+				showModal = !ajaxify.data.privileges['topics:reply'];
+			}
+		}
+
+		if (!showModal || !app.user.uid || parseInt(storage.getItem('email-confirm-dismiss'), 10) === 1) {
 			return;
 		}
 		var msg = {
 			alert_id: 'email_confirm',
 			type: 'warning',
 			timeout: 0,
+			closefn: () => {
+				storage.setItem('email-confirm-dismiss', 1);
+			},
 		};
 
 		if (!app.user.email) {
 			msg.message = '[[error:no-email-to-confirm]]';
 			msg.clickfn = function () {
 				app.removeAlert('email_confirm');
-				ajaxify.go('user/' + app.user.userslug + '/edit');
+				ajaxify.go('user/' + app.user.userslug + '/edit/email');
 			};
 			app.alert(msg);
 		} else if (!app.user['email:confirmed'] && !app.user.isEmailConfirmSent) {
@@ -765,7 +805,6 @@ app.cacheBuster = null;
 					app.alertSuccess('[[notifications:email-confirm-sent]]');
 				});
 			};
-
 			app.alert(msg);
 		} else if (!app.user['email:confirmed'] && app.user.isEmailConfirmSent) {
 			msg.message = '[[error:email-not-confirmed-email-sent]]';

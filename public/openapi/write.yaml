@@ -52,6 +52,8 @@ paths:
     $ref: 'write/users.yaml'
   /users/{uid}:
     $ref: 'write/users/uid.yaml'
+  /users/{uid}/picture:
+    $ref: 'write/users/uid/picture.yaml'
   /users/{uid}/content:
     $ref: 'write/users/uid/content.yaml'
   /users/{uid}/account:
@@ -112,6 +114,8 @@ paths:
     $ref: 'write/topics/tid/thumbs/order.yaml'
   /topics/{tid}/events:
     $ref: 'write/topics/tid/events.yaml'
+  /topics/{tid}/events/{eventId}:
+    $ref: 'write/topics/tid/events/eventId.yaml'
   /posts/{pid}:
     $ref: 'write/posts/pid.yaml'
   /posts/{pid}/state:
@@ -128,9 +132,19 @@ paths:
     $ref: 'write/posts/pid/diffs/since.yaml'
   /posts/{pid}/diffs/{timestamp}:
     $ref: 'write/posts/pid/diffs/timestamp.yaml'
+  /flags/:
+    $ref: 'write/flags.yaml'
+  /flags/{flagId}:
+    $ref: 'write/flags/flagId.yaml'
+  /flags/{flagId}/notes:
+    $ref: 'write/flags/flagId/notes.yaml'
+  /flags/{flagId}/notes/{datetime}:
+    $ref: 'write/flags/flagId/notes/datetime.yaml'
   /admin/settings/{setting}:
     $ref: 'write/admin/settings/setting.yaml'
   /admin/analytics/{set}:
     $ref: 'write/admin/analytics/set.yaml'
   /files/:
     $ref: 'write/files.yaml'
+  /files/folder:
+    $ref: 'write/files/folder.yaml'

@@ -14,23 +14,25 @@
 	Benchpress.setGlobal('false', false);
 
 	var helpers = {
-		displayMenuItem: displayMenuItem,
-		buildMetaTag: buildMetaTag,
-		buildLinkTag: buildLinkTag,
-		stringify: stringify,
-		escape: escape,
-		stripTags: stripTags,
-		generateCategoryBackground: generateCategoryBackground,
-		generateChildrenCategories: generateChildrenCategories,
-		generateTopicClass: generateTopicClass,
-		membershipBtn: membershipBtn,
-		spawnPrivilegeStates: spawnPrivilegeStates,
-		localeToHTML: localeToHTML,
-		renderTopicImage: renderTopicImage,
-		renderDigestAvatar: renderDigestAvatar,
-		userAgentIcons: userAgentIcons,
-		buildAvatar: buildAvatar,
-		register: register,
+		displayMenuItem,
+		buildMetaTag,
+		buildLinkTag,
+		stringify,
+		escape,
+		stripTags,
+		generateCategoryBackground,
+		generateChildrenCategories,
+		generateTopicClass,
+		membershipBtn,
+		spawnPrivilegeStates,
+		localeToHTML,
+		renderTopicImage,
+		renderTopicEvents,
+		renderEvents,
+		renderDigestAvatar,
+		userAgentIcons,
+		buildAvatar,
+		register,
 		__escape: identity,
 		isEqual: isEqual,
 		isNotEqual: isNotEqual,
@@ -72,13 +74,8 @@
 	}
 
 	function buildLinkTag(tag) {
-		var link = tag.link ? 'link="' + tag.link + '" ' : '';
-		var rel = tag.rel ? 'rel="' + tag.rel + '" ' : '';
-		var as = tag.as ? 'as="' + tag.as + '" ' : '';
-		var type = tag.type ? 'type="' + tag.type + '" ' : '';
-		var href = tag.href ? 'href="' + tag.href + '" ' : '';
-		var sizes = tag.sizes ? 'sizes="' + tag.sizes + '" ' : '';
-		var title = tag.title ? 'title="' + tag.title + '" ' : '';
+		const attributes = ['link', 'rel', 'as', 'type', 'href', 'sizes', 'title'];
+		const [link, rel, as, type, href, sizes, title] = attributes.map(attr => (tag[attr] ? `${attr}="${tag[attr]}" ` : ''));
 
 		return '<link ' + link + rel + as + type + sizes + title + href + '/>\n\t';
 	}
@@ -215,6 +212,49 @@
 			return '<img src="' + topicObj.thumb + '" class="img-circle user-img" title="' + topicObj.user.username + '" />';
 		}
 		return '<img component="user/picture" data-uid="' + topicObj.user.uid + '" src="' + topicObj.user.picture + '" class="user-img" title="' + topicObj.user.username + '" />';
+	}
+
+	function renderTopicEvents(index) {
+		const start = this.posts[index].timestamp;
+		const end = this.posts[index + 1] ? this.posts[index + 1].timestamp : Date.now();
+		const events = this.events.filter(event => event.timestamp >= start && event.timestamp < end);
+		if (!events.length) {
+			return '';
+		}
+
+		return renderEvents.call(this, events);
+	}
+
+	function renderEvents(events) {
+		if (!ajaxify.data.privileges.isAdminOrMod) {
+			return '';
+		}
+		return events.reduce((html, event) => {
+			html += `<li component="topic/event" class="timeline-event" data-topic-event-id="${event.id}">
+				<div class="timeline-badge">
+					<i class="fa ${event.icon || 'fa-circle'}"></i>
+				</div>
+				<span class="timeline-text">
+					${event.href ? `<a href="${relative_path}${event.href}>${event.text}</a>` : event.text}&nbsp;
+				</span>
+			`;
+
+			if (event.user) {
+				if (!event.user.system) {
+					html += `<span><a href="${relative_path}/user/${event.user.userslug}">${buildAvatar(event.user, 'xs', true)}&nbsp;${event.user.username}</a></span>&nbsp;`;
+				} else {
+					html += `<span class="timeline-text">[[global:system-user]]</span>&nbsp;`;
+				}
+			}
+
+			html += `<span class="timeago timeline-text" title="${event.timestampISO}"></span>`;
+
+			if (this.privileges.isAdminOrMod) {
+				html += `&nbsp;<span component="topic/event/delete" data-topic-event-id="${event.id}" class="timeline-text pointer" title="[[topic:delete-event]]"><i class="fa fa-trash"></i></span>`;
+			}
+
+			return html;
+		}, '');
 	}
 
 	function renderDigestAvatar(block) {

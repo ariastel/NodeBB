@@ -43,20 +43,9 @@ SocketUser.deleteAccount = async function (socket, data) {
 	await api.users.deleteAccount(socket, data);
 };
 
-SocketUser.emailExists = async function (socket, data) {
-	if (!data || !data.email) {
-		throw new Error('[[error:invalid-data]]');
-	}
-	return await user.email.exists(data.email);
-};
-
 SocketUser.emailConfirm = async function (socket) {
 	if (!socket.uid) {
 		throw new Error('[[error:no-privileges]]');
-	}
-
-	if (!meta.config.requireEmailConfirmation) {
-		throw new Error('[[error:email-confirmations-are-disabled]]');
 	}
 
 	return await user.email.sendValidationEmail(socket.uid);
@@ -86,9 +75,10 @@ SocketUser.reset.send = async function (socket, email) {
 	try {
 		await user.reset.send(email);
 		await logEvent('[[success:success]]');
-		await sleep(2500);
+		await sleep(2500 + ((Math.random() * 500) - 250));
 	} catch (err) {
 		await logEvent(err.message);
+		await sleep(2500 + ((Math.random() * 500) - 250));
 		const internalErrors = ['[[error:invalid-email]]', '[[error:reset-rate-limited]]'];
 		if (!internalErrors.includes(err.message)) {
 			throw err;
@@ -147,7 +137,7 @@ SocketUser.saveSettings = async function (socket, data) {
 };
 
 SocketUser.setTopicSort = async function (socket, sort) {
-	sockets.warnDeprecated(socket, 'PUT /api/v3/users/:uid/setting/topicPostSort');
+	sockets.warnDeprecated(socket, 'PUT /api/v3/users/:uid/settings');
 	await api.users.updateSetting(socket, {
 		uid: socket.uid,
 		setting: 'topicPostSort',
@@ -156,7 +146,7 @@ SocketUser.setTopicSort = async function (socket, sort) {
 };
 
 SocketUser.setCategorySort = async function (socket, sort) {
-	sockets.warnDeprecated(socket, 'PUT /api/v3/users/:uid/setting/categoryTopicSort');
+	sockets.warnDeprecated(socket, 'PUT /api/v3/users/:uid/settings');
 	await api.users.updateSetting(socket, {
 		uid: socket.uid,
 		setting: 'categoryTopicSort',

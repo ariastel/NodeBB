@@ -33,7 +33,8 @@ module.exports = function (Topics) {
 		}
 		const canDelete = await privileges.topics.canDelete(tid, uid);
 
-		const data = await plugins.hooks.fire(isDelete ? 'filter:topic.delete' : 'filter:topic.restore', { topicData: topicData, uid: uid, isDelete: isDelete, canDelete: canDelete, canRestore: canDelete });
+		const hook = isDelete ? 'delete' : 'restore';
+		const data = await plugins.hooks.fire(`filter:topic.${hook}`, { topicData: topicData, uid: uid, isDelete: isDelete, canDelete: canDelete, canRestore: canDelete });
 
 		if ((!data.canDelete && data.isDelete) || (!data.canRestore && !data.isDelete)) {
 			throw new Error('[[error:no-privileges]]');
@@ -268,6 +269,7 @@ module.exports = function (Topics) {
 				oldCid: oldCid,
 			}),
 			Topics.updateCategoryTagsCount([oldCid, cid], tags),
+			Topics.events.log(tid, { type: 'move', uid: data.uid, fromCid: oldCid }),
 		]);
 		const hookData = _.clone(data);
 		hookData.fromCid = oldCid;

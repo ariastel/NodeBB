@@ -1,7 +1,7 @@
 'use strict';
 
 
-define('forum/topic/move', ['categorySelector', 'alerts'], function (categorySelector, alerts) {
+define('forum/topic/move', ['categorySelector', 'alerts', 'hooks'], function (categorySelector, alerts, hooks) {
 	var Move = {};
 	var modal;
 	var selectedCategory;
@@ -63,25 +63,29 @@ define('forum/topic/move', ['categorySelector', 'alerts'], function (categorySel
 				currentCid: Move.currentCid,
 				onComplete: Move.onComplete,
 			};
-			alerts.alert({
-				alert_id: 'tids_move_' + (Move.tids ? Move.tids.join('-') : 'all'),
-				title: '[[topic:thread_tools.move]]',
-				message: message,
-				type: 'success',
-				timeout: 10000,
-				timeoutfn: function () {
-					moveTopics(data);
-				},
-				clickfn: function (alert, params) {
-					delete params.timeoutfn;
-					app.alertSuccess('[[topic:topic_move_undone]]');
-				},
-			});
+			if (config.undoTimeout > 0) {
+				return alerts.alert({
+					alert_id: 'tids_move_' + (Move.tids ? Move.tids.join('-') : 'all'),
+					title: '[[topic:thread_tools.move]]',
+					message: message,
+					type: 'success',
+					timeout: config.undoTimeout,
+					timeoutfn: function () {
+						moveTopics(data);
+					},
+					clickfn: function (alert, params) {
+						delete params.timeoutfn;
+						app.alertSuccess('[[topic:topic_move_undone]]');
+					},
+				});
+			}
+
+			moveTopics(data);
 		}
 	}
 
 	function moveTopics(data) {
-		$(window).trigger('action:topic.move', data);
+		hooks.fire('action:topic.move', data);
 
 		socket.emit(!data.tids ? 'topics.moveAll' : 'topics.move', data, function (err) {
 			if (err) {

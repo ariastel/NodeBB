@@ -27,7 +27,8 @@ Users.redirectBySlug = async (req, res) => {
 
 	if (uid) {
 		const path = req.path.split('/').slice(3).join('/');
-		res.redirect(308, nconf.get('relative_path') + encodeURI(`/api/v3/users/${uid}/${path}`));
+		const urlObj = new URL(nconf.get('url') + req.url);
+		res.redirect(308, nconf.get('relative_path') + encodeURI(`/api/v3/users/${uid}/${path}${urlObj.search}`));
 	} else {
 		helpers.formatApiResponse(404, res);
 	}
@@ -41,6 +42,12 @@ Users.create = async (req, res) => {
 
 Users.exists = async (req, res) => {
 	helpers.formatApiResponse(200, res);
+};
+
+Users.get = async (req, res) => {
+	const userData = await user.getUserData(req.params.uid);
+	const publicUserData = await user.hidePrivateData(userData, req.uid);
+	helpers.formatApiResponse(200, res, publicUserData);
 };
 
 Users.update = async (req, res) => {
@@ -66,6 +73,11 @@ Users.deleteAccount = async (req, res) => {
 Users.deleteMany = async (req, res) => {
 	await hasAdminPrivilege(req.uid, 'users');
 	await api.users.deleteMany(req, req.body);
+	helpers.formatApiResponse(200, res);
+};
+
+Users.changePicture = async (req, res) => {
+	await api.users.changePicture(req, { ...req.body, uid: req.params.uid });
 	helpers.formatApiResponse(200, res);
 };
 

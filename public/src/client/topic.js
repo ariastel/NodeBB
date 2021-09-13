@@ -12,7 +12,12 @@ define('forum/topic', [
 	'sort',
 	'components',
 	'storage',
-], function (infinitescroll, threadTools, postTools, events, posts, images, navigator, sort, components, storage) {
+	'hooks',
+], function (
+	infinitescroll, threadTools, postTools,
+	events, posts, images, navigator, sort,
+	components, storage, hooks
+) {
 	var	Topic = {};
 	var currentUrl = '';
 
@@ -39,7 +44,7 @@ define('forum/topic', [
 	Topic.init = function () {
 		var tid = ajaxify.data.tid;
 		currentUrl = ajaxify.currentPage;
-		$(window).trigger('action:topic.loading');
+		hooks.fire('action:topic.loading');
 
 		app.enterRoom('topic_' + tid);
 
@@ -69,8 +74,9 @@ define('forum/topic', [
 		$(window).on('scroll', updateTopicTitle);
 
 		handleTopicSearch();
+		app.showEmailConfirmWarning();
 
-		$(window).trigger('action:topic.loaded', ajaxify.data);
+		hooks.fire('action:topic.loaded', ajaxify.data);
 	};
 
 	function handleTopicSearch() {
