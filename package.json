@@ -59,6 +59,7 @@
     "@ariastel/nodebb-widget-partners": "0.0.2",
     "@ariastel/nodebb-widget-recent-posts": "0.1.3",
     "@ariastel/nodebb-widget-recent-topics": "0.1.3",
+    "@ariastel/nodebb-widget-social-links": "0.0.1",
     "@ariastel/nodebb-widget-stats": "0.0.2",
     "@ariastel/nodebb-widget-twitch": "0.0.4",
     "@socket.io/redis-adapter": "7.0.0",
