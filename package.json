@@ -46,7 +46,7 @@
     "@ariastel/nodebb-plugin-markdown": "1.0.1",
     "@ariastel/nodebb-plugin-news-posts": "1.2.0",
     "@ariastel/nodebb-plugin-ns-embed": "5.0.1",
-    "@ariastel/nodebb-plugin-one-signal": "0.0.1",
+    "@ariastel/nodebb-plugin-one-signal": "0.0.2",
     "@ariastel/nodebb-plugin-reactions": "0.0.3",
     "@ariastel/nodebb-plugin-s3-file-uploads": "1.1.1",
     "@ariastel/nodebb-plugin-share-vk": "1.0.1",
