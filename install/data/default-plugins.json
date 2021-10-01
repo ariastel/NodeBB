@@ -9,6 +9,7 @@
   "@ariastel/nodebb-plugin-emoji",
   "@ariastel/nodebb-plugin-emoji-ariastel",
   "@ariastel/nodebb-plugin-filter-nsfw",
+  "@ariastel/nodebb-plugin-group-post-mark",
   "@ariastel/nodebb-plugin-lightgallery",
   "@ariastel/nodebb-plugin-lor-deck",
   "@ariastel/nodebb-plugin-markdown",
