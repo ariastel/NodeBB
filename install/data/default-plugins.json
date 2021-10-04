@@ -17,6 +17,7 @@
   "@ariastel/nodebb-plugin-ns-embed",
   "@ariastel/nodebb-plugin-one-signal",
   "@ariastel/nodebb-plugin-reactions",
+  "@ariastel/nodebb-plugin-rt-topic-tools",
   "@ariastel/nodebb-plugin-s3-file-uploads",
   "@ariastel/nodebb-plugin-share-vk",
   "@ariastel/nodebb-plugin-signature-display",
