@@ -22,11 +22,11 @@ module.exports = function (Plugins) {
 			cssFiles: function (next) {
 				Plugins.data.getFiles(pluginData, 'css', next);
 			},
-			lessFiles: function (next) {
-				Plugins.data.getFiles(pluginData, 'less', next);
+			sassFiles: function (next) {
+				Plugins.data.getFiles(pluginData, 'sass', next);
 			},
-			acpLessFiles: function (next) {
-				Plugins.data.getFiles(pluginData, 'acpLess', next);
+			acpSassFiles: function (next) {
+				Plugins.data.getFiles(pluginData, 'acpSass', next);
 			},
 			clientScripts: function (next) {
 				Plugins.data.getScripts(pluginData, 'client', next);
@@ -55,8 +55,8 @@ module.exports = function (Plugins) {
 
 		Object.assign(Plugins.staticDirs, results.staticDirs || {});
 		add(Plugins.cssFiles, results.cssFiles);
-		add(Plugins.lessFiles, results.lessFiles);
-		add(Plugins.acpLessFiles, results.acpLessFiles);
+		add(Plugins.sassFiles, results.sassFiles);
+		add(Plugins.acpSassFiles, results.acpSassFiles);
 		add(Plugins.clientScripts, results.clientScripts);
 		add(Plugins.acpScripts, results.acpScripts);
 		Object.assign(meta.js.scripts.modules, results.modules || {});
@@ -73,8 +73,8 @@ module.exports = function (Plugins) {
 			'requirejs modules': ['modules'],
 			'client js bundle': ['clientScripts'],
 			'admin js bundle': ['acpScripts'],
-			'client side styles': ['cssFiles', 'lessFiles'],
-			'admin control panel styles': ['cssFiles', 'lessFiles', 'acpLessFiles'],
+			'client side styles': ['cssFiles', 'sassFiles'],
+			'admin control panel styles': ['cssFiles', 'sassFiles', 'acpSassFiles'],
 			languages: ['languageData'],
 		};
 
@@ -86,8 +86,8 @@ module.exports = function (Plugins) {
 				case 'clientScripts':
 				case 'acpScripts':
 				case 'cssFiles':
-				case 'lessFiles':
-				case 'acpLessFiles':
+				case 'sassFiles':
+				case 'acpSassFiles':
 					Plugins[field].length = 0;
 					break;
 				case 'languageData':

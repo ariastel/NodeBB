@@ -14,7 +14,7 @@ define('admin/appearance/customise', ['admin/settings', 'ace/ace'], function (Se
 			var customHTML = ace.edit('customHTML');
 
 			customCSS.setTheme('ace/theme/twilight');
-			customCSS.getSession().setMode('ace/mode/less');
+			customCSS.getSession().setMode('ace/mode/sass');
 
 			customCSS.on('change', function () {
 				app.flags = app.flags || {};

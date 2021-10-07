@@ -6,11 +6,11 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
 const childProcess = require('child_process');
-const less = require('less');
+const sass = require('sass');
 const util = require('util');
 
-const lessRenderAsync = util.promisify(
-	(style, opts, cb) => less.render(String(style), opts, cb)
+const sassRenderAsync = util.promisify(
+	({ inputPath, outputPath }, cb) => sass.render({ file: inputPath, outFile: outputPath }, cb)
 );
 const uglify = require('uglify-es');
 const nconf = require('nconf');
@@ -85,7 +85,7 @@ web.install = async function (port) {
 	try {
 		await Promise.all([
 			compileTemplate(),
-			compileLess(),
+			compileSass(),
 			compileJS(),
 			copyCSS(),
 			loadDefaults(),
@@ -249,14 +249,15 @@ async function compileTemplate() {
 	]);
 }
 
-async function compileLess() {
+async function compileSass() {
 	try {
-		const installSrc = path.join(__dirname, '../public/less/install.less');
-		const style = await fs.promises.readFile(installSrc);
-		const css = await lessRenderAsync(style, { filename: path.resolve(installSrc) });
-		await fs.promises.writeFile(path.join(__dirname, '../public/installer.css'), css.css);
+		const installSrc = path.join(__dirname, '../public/sass/install.scss');
+		await sassRenderAsync({
+			inputPath: path.resolve(installSrc),
+			outputPath: path.join(__dirname, '../public/installer.css'),
+		});
 	} catch (err) {
-		winston.error(`Unable to compile LESS: \n${err.stack}`);
+		winston.error(`Unable to compile SASS: \n${err.stack}`);
 		throw err;
 	}
 }

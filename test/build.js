@@ -94,8 +94,8 @@ describe('minifier', () => {
 	});
 
 	const styles = [
-		'@import (inline) "./1.css";',
-		'@import "./2.less";',
+		'@import "./1.css";',
+		'@import "./2.scss";',
 	].join('\n');
 	const paths = [
 		path.resolve(__dirname, './files'),

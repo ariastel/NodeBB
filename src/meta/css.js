@@ -24,36 +24,36 @@ CSS.supportedSkins = [
 
 const buildImports = {
 	client: function (source) {
-		return `@import "./theme";\n${source}\n${[
-			'@import "../public/vendor/fontawesome/less/regular.less";',
+		return `@import "mixins.scss";@import "generics.scss";@import "bootstrap/scss/bootstrap"; @import "theme.scss";\n${source}\n${[
+			// TODO SASS
+			/* '@import "../public/vendor/fontawesome/less/regular.less";',
 			'@import "../public/vendor/fontawesome/less/solid.less";',
 			'@import "../public/vendor/fontawesome/less/brands.less";',
 			'@import "../public/vendor/fontawesome/less/fontawesome.less";',
 			'@import "../public/vendor/fontawesome/less/v4-shims.less";',
-			'@import "../public/vendor/fontawesome/less/nodebb-shims.less";',
-			'@import "../../public/less/jquery-ui.less";',
-			'@import (inline) "../node_modules/@adactive/bootstrap-tagsinput/src/bootstrap-tagsinput.css";',
-			'@import (inline) "../node_modules/cropperjs/dist/cropper.css";',
-			'@import "../../public/less/flags.less";',
-			'@import "../../public/less/generics.less";',
-			'@import "../../public/less/mixins.less";',
-			'@import "../../public/less/global.less";',
-			'@import "../../public/less/modals.less";',
+			'@import "../public/vendor/fontawesome/less/nodebb-shims.less";', */
+			'@import "jquery-ui.scss";',
+			'@import "../../node_modules/@adactive/bootstrap-tagsinput/src/bootstrap-tagsinput.css";',
+			'@import "../../node_modules/cropperjs/dist/cropper.css";',
+			'@import "flags.scss";',
+			'@import "global.scss";',
+			'@import "modals.scss";',
 		].map(str => str.replace(/\//g, path.sep)).join('\n')}`;
 	},
 	admin: function (source) {
 		return `${source}\n${[
-			'@import "../public/vendor/fontawesome/less/regular.less";',
+			/* '@import "../public/vendor/fontawesome/less/regular.less";',
 			'@import "../public/vendor/fontawesome/less/solid.less";',
 			'@import "../public/vendor/fontawesome/less/brands.less";',
 			'@import "../public/vendor/fontawesome/less/fontawesome.less";',
 			'@import "../public/vendor/fontawesome/less/v4-shims.less";',
-			'@import "../public/vendor/fontawesome/less/nodebb-shims.less";',
-			'@import "../public/less/admin/admin";',
-			'@import "../public/less/generics.less";',
-			'@import "../../public/less/jquery-ui.less";',
-			'@import (inline) "../node_modules/@adactive/bootstrap-tagsinput/src/bootstrap-tagsinput.css";',
-			'@import (inline) "../public/vendor/mdl/material.css";',
+			'@import "../public/vendor/fontawesome/less/nodebb-shims.less";', */
+			'@import "mixins.scss";',
+			'@import "generics.scss";',
+			'@import "admin/admin.scss";',
+			'@import "jquery-ui.scss";',
+			'@import "../../node_modules/@adactive/bootstrap-tagsinput/src/bootstrap-tagsinput.css";',
+			'@import "../../public/vendor/mdl/material.css";',
 		].map(str => str.replace(/\//g, path.sep)).join('\n')}`;
 	},
 };
@@ -94,7 +94,7 @@ async function getImports(files, prefix, extension) {
 async function getBundleMetadata(target) {
 	const paths = [
 		path.join(__dirname, '../../node_modules'),
-		path.join(__dirname, '../../public/less'),
+		path.join(__dirname, '../../public/scss'),
 		path.join(__dirname, '../../public/vendor/fontawesome/less'),
 	];
 
@@ -116,16 +116,18 @@ async function getBundleMetadata(target) {
 
 		themeData.bootswatchSkin = skin || themeData.bootswatchSkin;
 		if (themeData && themeData.bootswatchSkin) {
-			skinImport.push(`\n@import "./@nodebb/bootswatch/${themeData.bootswatchSkin}/variables.less";`);
-			skinImport.push(`\n@import "./@nodebb/bootswatch/${themeData.bootswatchSkin}/bootswatch.less";`);
+			skinImport.push(`\n@import "./@nodebb/bootswatch/${themeData.bootswatchSkin}/variables.scss";`);
+			skinImport.push(`\n@import "./@nodebb/bootswatch/${themeData.bootswatchSkin}/bootswatch.scss";`);
 		}
 		skinImport = skinImport.join('');
 	}
 
-	const [lessImports, cssImports, acpLessImports] = await Promise.all([
-		moo(plugins.lessFiles, '\n@import ".', '.less'),
-		moo(plugins.cssFiles, '\n@import (inline) ".', '.css'),
-		target === 'client' ? '' : moo(plugins.acpLessFiles, '\n@import ".', '.less'),
+	console.log(plugins);
+
+	const [sassImports, cssImports, acpSassImports] = await Promise.all([
+		moo(plugins.sassFiles, '\n@import "../../node_modules/', '.scss'),
+		moo(plugins.cssFiles, '\n@import "../../node_modules/', '.css'),
+		target === 'client' ? '' : moo(plugins.acpSassFiles, '\n@import ".', '.scss'),
 	]);
 
 	async function moo(files, prefix, extension) {
@@ -133,7 +135,7 @@ async function getBundleMetadata(target) {
 		return await getImports(filteredFiles, prefix, extension);
 	}
 
-	let imports = `${skinImport}\n${cssImports}\n${lessImports}\n${acpLessImports}`;
+	let imports = `${skinImport}\n${cssImports}\n${sassImports}\n${acpSassImports}`;
 	imports = buildImports[target](imports);
 
 	return { paths: paths, imports: imports };
@@ -146,6 +148,7 @@ CSS.buildBundle = async function (target, fork) {
 
 	const data = await getBundleMetadata(target);
 	const minify = process.env.NODE_ENV !== 'development';
+	console.log(data);
 	const bundle = await minifier.css.bundle(data.imports, data.paths, minify, fork);
 
 	const filename = `${target}.css`;

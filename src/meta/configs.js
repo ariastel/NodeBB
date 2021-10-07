@@ -237,23 +237,20 @@ function ensureInteger(data, field, min) {
 	}
 }
 
-function lessRender(string, callback) {
-	const less = require('less');
-	less.render(string, {
-		compress: true,
-		javascriptEnabled: true,
-	}, callback);
+function scssRender(string, callback) {
+	const sass = require('sass');
+	sass.render({ data: string }, callback);
 }
 
-const lessRenderAsync = util.promisify(lessRender);
+const scssRenderAsync = util.promisify(scssRender);
 
 async function saveRenderedCss(data) {
 	if (!data.customCSS) {
 		return;
 	}
 
-	const lessObject = await lessRenderAsync(data.customCSS);
-	data.renderedCustomCSS = lessObject.css;
+	const scssObject = await scssRenderAsync(data.customCSS);
+	data.renderedCustomCSS = scssObject.css;
 }
 
 async function getLogoSize(data) {

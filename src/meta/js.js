@@ -17,13 +17,13 @@ const JS = module.exports;
 JS.scripts = {
 	base: [
 		'node_modules/socket.io-client/dist/socket.io.js',
+		'node_modules/jquery/dist/jquery.js',
+		'node_modules/bootstrap/dist/js/bootstrap.bundle.js',
 		'node_modules/requirejs/require.js',
 		'public/src/require-config.js',
-		'node_modules/jquery/dist/jquery.js',
 		'node_modules/textcomplete/dist/textcomplete.min.js',
 		'node_modules/textcomplete.contenteditable/dist/textcomplete.codemirror.min.js',
 		'node_modules/visibilityjs/lib/visibility.core.js',
-		'node_modules/bootstrap/dist/js/bootstrap.js',
 		'node_modules/@adactive/bootstrap-tagsinput/src/bootstrap-tagsinput.js',
 		'node_modules/benchpressjs/build/benchpress.js',
 		'node_modules/jquery-serializeobject/jquery.serializeObject.js',

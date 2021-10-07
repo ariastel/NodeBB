@@ -5,7 +5,7 @@ const os = require('os');
 const uglify = require('uglify-es');
 const async = require('async');
 const winston = require('winston');
-const less = require('less');
+const sass = require('sass');
 const postcss = require('postcss');
 const autoprefixer = require('autoprefixer');
 const clean = require('postcss-clean');
@@ -266,12 +266,13 @@ Minifier.js.minifyBatch = function (scripts, fork, callback) {
 };
 
 function buildCSS(data, callback) {
-	less.render(data.source, {
-		paths: data.paths,
-		javascriptEnabled: true,
-	}, (err, lessOutput) => {
+	console.log(data);
+	sass.render({
+		data: data.source,
+		includePaths: data.paths,
+	}, (err, sassOutput) => {
 		if (err) {
-			// display less parser errors properly
+			// display sass parser errors properly
 			return callback(new Error(String(err)));
 		}
 
@@ -280,7 +281,7 @@ function buildCSS(data, callback) {
 			clean({
 				processImportFrom: ['local'],
 			}),
-		] : [autoprefixer]).process(lessOutput.css, {
+		] : [autoprefixer]).process(sassOutput.css, {
 			from: undefined,
 		}).then((result) => {
 			process.nextTick(callback, null, { code: result.css });
